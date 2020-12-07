@@ -2,6 +2,10 @@ exchange = Exchange()
     data_center = DataCenter()
     trade_calender = TradeCalender()
     contract = Contract()
+        self.operate_contract
+        self.main_contract
+        self.open_contract
+        
     position = Position()
 
 agent = Agent()
