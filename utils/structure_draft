@@ -18,7 +18,7 @@ while exchange.trade_calender.is_trade_date:
     exchange.contract.renew_contract()
     if exchange.position.holding_position != []:
         if exchange.contract.operate_contract != exchange.position.holding_position['contract_id']
-            agent.trade_calender.close_position(contract_id=exchange.position.holding_position['contract_id'])
+            agent.trade_center.close_position(contract_id=exchange.position.holding_position['contract_id'])
 
     signal = agent.strategy.gen_signal(data=exchange.data_center.data, position=exchange.position)
     trade_info = agent.trade_center.trade(signal)

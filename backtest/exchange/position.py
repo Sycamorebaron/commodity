@@ -1,3 +1,5 @@
 class Position:
     def __init__(self):
-        pass
+        self.holding_position = []
+
+
