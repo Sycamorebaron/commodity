@@ -1,36 +1,57 @@
-from backtest.exchange.exchange import Exchange
-from backtest.agent.agent import Agent
-from backtest.exchange.earth_calender import EarthCalender
+from backtest.Exchange.Exchange import Exchange
+from backtest.Agent.Agent import Agent
+from backtest.Agent.Strategy import MAStrategy
 
 
 class MainTest:
     def __init__(self, begin_date, end_date):
         self._begin_date = begin_date
         self.end_date = end_date
-        self.earth_calender = EarthCalender(
-            begin_date=begin_date,
-            end_date=end_date
+        self.exchange = Exchange(
+            contract_list=[
+                {
+                    'id': 'M',
+                    'month_list': [1, 3, 5, 7, 8, 9, 11, 12]
+                },
+            ]
         )
-        self.exchange = Exchange()
-        self.agent = Agent()
+        self.agent = Agent(
+            strategy=MAStrategy(
+                ma_para_list=[5, 10, 20, 60, 120]
+            ),
+            begin_date=begin_date,
+            end_date=end_date,
+        )
 
     def test(self):
-        # 交易日
-        while self.exchange.trade_calender.tradable_date(date=self.earth_calender.now_date):
-            self.exchange.contract.renew_contract()
-            # 当前有持仓，且操作合约不是operate contract，平仓
-            if self.exchange.position.holding_position:
-                if self.exchange.position.holding_position[0]['contract_id'] != self.exchange.contract.operate_contract:
-                    self.agent.trade_center.close_position()
-            
+
+        while not self.agent.earth_calender.end_of_test():
+            # 交易日
+            if self.exchange.trade_calender.tradable_date(date=self.agent.earth_calender.now_date):
+
+                self.exchange.M_contract.renew_open_contract(now_date=self.agent.earth_calender.now_date)
+                self.exchange.M_contract.renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+                # 根据策略计算目标仓位
+                target_pos = self.agent.strategy.cal_target_pos(
+                    contract=self.exchange.M_contract,
+                    tm=self.agent.earth_calender.now_date
+                )
+                print(self.agent.earth_calender.now_date, target_pos)
+
+                # # 根据目标仓位调仓
+                # trade_info = self.agent.trade_center.change_position(
+                #     exchange=self.exchange,
+                #     target_pos=target_pos
+                # )
 
 
+            self.agent.earth_calender.next_day()
 
 
 if __name__ == '__main__':
     main_test = MainTest(
         begin_date='2011-01-01',
-        end_date='2020-11-31'
+        end_date='2020-11-26'
     )
     main_test.test()
-

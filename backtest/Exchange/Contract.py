@@ -1,4 +1,5 @@
 import pandas as pd
+from backtest.Exchange.DataFetcher import DataFetcher
 from utils.base_para import *
 
 pd.set_option('expand_frame_repr', False)
@@ -69,6 +70,8 @@ class _ContractSeries:
 class Contract:
     def __init__(self, contract_name, month_list):
         self.operate_contract = ''
+        self.data_dict = {}
+        self.data_fetcher = DataFetcher(database=eg)
         self.contract_name = contract_name
         self.month_list = month_list
         self._contract_series = _ContractSeries(
@@ -76,6 +79,7 @@ class Contract:
             month_list=month_list
         )
         self.contract_volume = self._fetch_volume()
+
 
     def _fetch_volume(self):
         sql = 'select * from "%s"."%s_volume"' % (self.contract_name, self.contract_name)
@@ -94,7 +98,7 @@ class Contract:
         volume_data.sort_values(by=volume_data.columns[1], inplace=True, ascending=False)
         return volume_data['index'].iloc[0]
 
-    def renew_operate_contract(self, now_contract, now_date):
+    def renew_operate_contract(self, now_date):
         """
         根据下述规则更新操作合约:
             1.交割日期更远
@@ -105,14 +109,37 @@ class Contract:
         """
         main_contract = self.now_main_contract(now_date=now_date)
         # hist_contract = [now_contract]
-        further_contract = [now_contract]
-        for i in range(len(self.month_list)):
-            # hist_contract.append(self._contract_series.last_contract(now_contract=hist_contract[-1]))
-            further_contract.append(self._contract_series.next_contract(now_contract=further_contract[-1]))
-        if main_contract in further_contract:
-            return main_contract
+        if self.operate_contract != '':
+            further_contract = [self.operate_contract]
+            for _ in range(len(self.month_list)):
+                # hist_contract.append(self._contract_series.last_contract(now_contract=hist_contract[-1]))
+                further_contract.append(self._contract_series.next_contract(now_contract=further_contract[-1]))
+            if main_contract in further_contract:
+                self.operate_contract = main_contract
         else:
-            return now_contract
+            self.operate_contract = main_contract
+
+    def now_open_contract(self, now_date):
+        volume_data = self.contract_volume.loc[self.contract_volume['datetime'] == now_date].dropna(axis=1)
+        volume_data = volume_data[volume_data.columns[2:]].T.reset_index()
+        return list(volume_data['index'])
+
+    def renew_open_contract(self, now_date):
+        """
+        更新当前开放的合约
+        :param now_date:
+        :return:
+        """
+
+        now_open_contract = self.now_open_contract(now_date=now_date)
+        for contract in now_open_contract:
+            if contract not in self.data_dict.keys():
+                self.data_dict[contract] = self.data_fetcher.get_contract_data(contract=contract)
+
+        _now_ky = list(self.data_dict.keys())
+        for contract in _now_ky:
+            if contract not in now_open_contract:
+                self.data_dict.pop(contract)
 
 
 if __name__ == '__main__':
@@ -120,5 +147,8 @@ if __name__ == '__main__':
         contract_name='M',
         month_list=[1, 3, 5, 7, 8, 9, 11, 12]
     )
-    new_contract = m_contract.renew_operate_contract(now_contract='M1905', now_date='2019-11-25')
-    print(new_contract)
+    # new_contract = m_contract.renew_operate_contract(now_contract='M1905', now_date='2019-11-25')
+    # print(new_contract)
+
+    now_open_contract = m_contract.now_open_contract('2020-11-10')
+    print(now_open_contract)

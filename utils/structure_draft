@@ -25,3 +25,16 @@ while exchange.trade_calender.is_trade_date:
     agent.recorder.record_trade(trade_info)
     agent.recorder.record_equity()
     exchange.trade_calender.next_day()
+
+
+============
+Agent
+EarthCalender Strategy TradeCenter Recorder
+
+============
+Exchange
+TradeCalender Contract Positon
+
+============
+Infrastracture
+DataFetcher
