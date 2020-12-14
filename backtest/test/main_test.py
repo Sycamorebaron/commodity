@@ -39,11 +39,11 @@ class MainTest:
                 )
                 print(self.agent.earth_calender.now_date, target_pos)
 
-                # # 根据目标仓位调仓
-                # trade_info = self.agent.trade_center.change_position(
-                #     exchange=self.exchange,
-                #     target_pos=target_pos
-                # )
+                # 根据目标仓位调仓
+                trade_info = self.agent.change_position(
+                    exchange=self.exchange,
+                    target_pos=target_pos
+                )
 
 
             self.agent.earth_calender.next_day()

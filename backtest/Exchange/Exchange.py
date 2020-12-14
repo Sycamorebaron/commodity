@@ -6,7 +6,7 @@ from backtest.Exchange.TradeCalender import TradeCalender
 class Exchange:
     def __init__(self, contract_list):
         self._gen_contract(contract_list)
-        self.position = Position()
+        self.position = Position(contract_list)
         self.trade_calender = TradeCalender()
 
     def _gen_contract(self, contract_info_list):
