@@ -29,11 +29,26 @@ while exchange.trade_calender.is_trade_date:
 
 ============
 Agent
-EarthCalender Strategy TradeCenter Recorder
+EarthCalender-renew Strategy TradeCenter Recorder-renew
 
 ============
 Exchange
-TradeCalender Contract Position
+TradeCalender Contract-renew Account-renew Position-renew
+    position
+{
+	'M': [
+		{
+			'contract_id': 'M2105',
+			'open_price': 1553,
+			'margin_occupied': 4022.2,
+		},
+		{},
+	],
+	'SA': [
+		{},
+		{}
+	]
+}
 
 ============
 Infrastructure

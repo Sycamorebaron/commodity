@@ -1,5 +1,5 @@
 import pandas as pd
-from backtest.Exchange.DataFetcher import DataFetcher
+from backtest.Infras.DataFetcher import DataFetcher
 from utils.base_para import *
 
 pd.set_option('expand_frame_repr', False)
@@ -141,6 +141,12 @@ class Contract:
             if contract not in now_open_contract:
                 self.data_dict.pop(contract)
 
+    def contract_price(self, contract, date, field):
+        if contract not in self.data_dict:
+            raise Exception('NOT OPEN CONTRACT')
+        print(self.data_dict[contract])
+        exit()
+        data = self.data_dict[contract].loc[self.data_dict[contract]['date'] == date, field]
 
 if __name__ == '__main__':
     m_contract = Contract(

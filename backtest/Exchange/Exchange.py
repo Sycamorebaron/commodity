@@ -1,12 +1,15 @@
 from backtest.Exchange.Contract import Contract
-from backtest.Exchange.Position import Position
+from backtest.Exchange.Account import Account
 from backtest.Exchange.TradeCalender import TradeCalender
 
 
 class Exchange:
-    def __init__(self, contract_list):
+    def __init__(self, init_cash, contract_list):
         self._gen_contract(contract_list)
-        self.position = Position(contract_list)
+        self.account = Account(
+            init_cash=init_cash,
+            contract_list=contract_list
+        )
         self.trade_calender = TradeCalender()
 
     def _gen_contract(self, contract_info_list):
@@ -17,6 +20,9 @@ class Exchange:
                 month_list=contract['month_list']
             )
 
+    def renew_account(self):
+        pass
+
 
 if __name__ == '__main__':
 
@@ -26,8 +32,9 @@ if __name__ == '__main__':
                 'id': 'M',
                 'month_list': [1, 3, 5, 7, 8, 9, 11, 12]
             },
-        ]
+        ],
+        init_cash=10000000
     )
-    ope_con = exchange.M_contract.renew_operate_contract(now_contract='M1905', now_date='2019-11-25')
+    ope_con = exchange.M_contract.renew_operate_contract(now_contract='M1905')
 
     print(ope_con)

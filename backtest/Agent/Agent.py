@@ -17,8 +17,20 @@ class Agent:
         :param target_pos:
         :return:
         """
+
         target_num = target_pos
 
+        data_dict = {}
+        for obj in exchange.__dict__:
+            if obj.endswith('contract'):
+                data_dict = {**data_dict, **exchange.__dict__[obj].data_dict}
+
+        now_equity = exchange.account.now_equity(
+            now_date=self.earth_calender.now_date,
+            data_dict=data_dict
+        )
+
+        exit()
         trade_info = self.trade_center.trade(
             exchange=exchange,
             target_num=target_num

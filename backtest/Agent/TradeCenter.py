@@ -10,13 +10,10 @@ class TradeCenter:
 
     def trade(self, exchange, target_num):
 
-        for ctr_id in target_num.keys():
-            ctr_target_pos = target_num[ctr_id]
+        for contract_target_num in target_num.keys():
 
-            ctr_holding_pos = exchange.position.holding_position
+            contract_holding_pos = exchange.account.position.holding_position
+            print(contract_target_num, contract_holding_pos)
+            exit()
 
-        print(target_num)
-        print(exchange.position.holding_position)
-        print('M1109'.strip('0123456789'))
-        exit()
         pass

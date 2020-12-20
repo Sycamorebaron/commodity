@@ -4,16 +4,19 @@ from backtest.Agent.Strategy import MAStrategy
 
 
 class MainTest:
-    def __init__(self, begin_date, end_date):
+    def __init__(self, begin_date, end_date, init_cash):
         self._begin_date = begin_date
         self.end_date = end_date
         self.exchange = Exchange(
             contract_list=[
                 {
                     'id': 'M',
-                    'month_list': [1, 3, 5, 7, 8, 9, 11, 12]
+                    'month_list': [1, 3, 5, 7, 8, 9, 11, 12],
+                    'init_margin_rate': 0.2,
+                    'contract_unit': 10
                 },
-            ]
+            ],
+            init_cash=init_cash
         )
         self.agent = Agent(
             strategy=MAStrategy(
@@ -52,6 +55,7 @@ class MainTest:
 if __name__ == '__main__':
     main_test = MainTest(
         begin_date='2011-01-01',
-        end_date='2020-11-26'
+        end_date='2020-11-26',
+        init_cash=1000000
     )
     main_test.test()
