@@ -1,6 +1,7 @@
 from backtest.Agent.Recorder import Recorder
 from backtest.Agent.TradeCenter import TradeCenter
 from backtest.Agent.EarthCalender import EarthCalender
+import string
 
 
 class Agent:
@@ -18,8 +19,6 @@ class Agent:
         :return:
         """
 
-        target_num = target_pos
-
         data_dict = {}
         for obj in exchange.__dict__:
             if obj.endswith('contract'):
@@ -30,8 +29,21 @@ class Agent:
             data_dict=data_dict
         )
 
-        exit()
+        target_num = {}
+        for contract in target_pos.keys():
+            contract_price = exchange.contract_dict[contract.rstrip(string.digits)].get_contract_data(
+                contract=contract,
+                now_date=self.earth_calender.now_date
+            )
+            contract_init_margin = contract_price * \
+                                   exchange.contract_dict[contract.rstrip(string.digits)].init_margin_rate * \
+                                   exchange.contract_dict[contract.rstrip(string.digits)].contract_unit
+            target_num[contract] = int(now_equity * target_pos[contract] / contract_init_margin)
+
         trade_info = self.trade_center.trade(
             exchange=exchange,
-            target_num=target_num
+            target_num=target_num,
+            now_date=self.earth_calender.now_date
         )
+
+        exit()

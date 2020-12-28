@@ -68,7 +68,7 @@ class _ContractSeries:
 
 
 class Contract:
-    def __init__(self, contract_name, month_list):
+    def __init__(self, contract_name, month_list, init_margin_rate, contract_unit):
         self.operate_contract = ''
         self.data_dict = {}
         self.data_fetcher = DataFetcher(database=eg)
@@ -79,6 +79,8 @@ class Contract:
             month_list=month_list
         )
         self.contract_volume = self._fetch_volume()
+        self.init_margin_rate = init_margin_rate
+        self.contract_unit = contract_unit
 
 
     def _fetch_volume(self):
@@ -147,6 +149,16 @@ class Contract:
         print(self.data_dict[contract])
         exit()
         data = self.data_dict[contract].loc[self.data_dict[contract]['date'] == date, field]
+
+    def get_contract_data(self, contract, now_date):
+        try:
+            data = self.data_dict[contract]
+        except Exception as e:
+            raise Exception('Contract.get_contract_data ERROR: CONTRACT NOT IN DATA DICT')
+        data = data.loc[data['trading_date'] == now_date]
+        return data['close'].iloc[-1]
+
+
 
 if __name__ == '__main__':
     m_contract = Contract(

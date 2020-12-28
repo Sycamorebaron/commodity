@@ -16,9 +16,9 @@ class Account:
         """
         pnl = 0
         print(self.position.holding_position)
-        # for comm in self.position.holding_position.keys():
-        #     for position in self.position.holding_position[comm]:
-        exit()
-
-
-        pass
+        for commodity in self.position.holding_position.keys():
+            if self.position.holding_position[commodity] == {}:
+                return self.cash
+            for position in self.position.holding_position[commodity]:
+                print(position)
+            exit()

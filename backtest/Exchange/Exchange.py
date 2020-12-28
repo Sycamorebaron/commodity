@@ -5,7 +5,9 @@ from backtest.Exchange.TradeCalender import TradeCalender
 
 class Exchange:
     def __init__(self, init_cash, contract_list):
-        self._gen_contract(contract_list)
+        self.contract_dict = self._gen_contract(
+            contract_info_list=contract_list
+        )
         self.account = Account(
             init_cash=init_cash,
             contract_list=contract_list
@@ -13,12 +15,17 @@ class Exchange:
         self.trade_calender = TradeCalender()
 
     def _gen_contract(self, contract_info_list):
+        contract_dict = {}
         for contract in contract_info_list:
-            print("LOAD CONTRACT", contract)
-            self.__dict__['%s_contract' % contract['id']] = Contract(
+
+            contract_dict[contract['id']] = Contract(
                 contract_name=contract['id'],
-                month_list=contract['month_list']
+                month_list=contract['month_list'],
+                init_margin_rate=contract['init_margin_rate'],
+                contract_unit=contract['contract_unit']
             )
+
+        return contract_dict
 
     def renew_account(self):
         pass

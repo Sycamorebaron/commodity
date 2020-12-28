@@ -32,12 +32,12 @@ class MainTest:
             # 交易日
             if self.exchange.trade_calender.tradable_date(date=self.agent.earth_calender.now_date):
 
-                self.exchange.M_contract.renew_open_contract(now_date=self.agent.earth_calender.now_date)
-                self.exchange.M_contract.renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+                self.exchange.contract_dict['M'].renew_open_contract(now_date=self.agent.earth_calender.now_date)
+                self.exchange.contract_dict['M'].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
 
                 # 根据策略计算目标仓位
                 target_pos = self.agent.strategy.cal_target_pos(
-                    contract=self.exchange.M_contract,
+                    contract=self.exchange.contract_dict['M'],
                     tm=self.agent.earth_calender.now_date
                 )
                 print(self.agent.earth_calender.now_date, target_pos)
