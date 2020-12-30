@@ -68,7 +68,7 @@ class _ContractSeries:
 
 
 class Contract:
-    def __init__(self, contract_name, month_list, init_margin_rate, contract_unit):
+    def __init__(self, contract_name, month_list, init_margin_rate, contract_unit, open_comm, close_comm):
         self.operate_contract = ''
         self.data_dict = {}
         self.data_fetcher = DataFetcher(database=eg)
@@ -81,7 +81,8 @@ class Contract:
         self.contract_volume = self._fetch_volume()
         self.init_margin_rate = init_margin_rate
         self.contract_unit = contract_unit
-
+        self.open_comm = open_comm
+        self.close_comm = close_comm
 
     def _fetch_volume(self):
         sql = 'select * from "%s"."%s_volume"' % (self.contract_name, self.contract_name)

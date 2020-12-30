@@ -8,6 +8,8 @@ class Account:
         self.cash = init_cash
         self.position = Position(contract_list=contract_list)
         self.data_fetcher = DataFetcher(database=eg)
+        self.risk_rate = 0
+        self.equity = init_cash
 
     def now_equity(self, now_date, data_dict):
         """

@@ -7,3 +7,6 @@ class Position:
         for contract in contract_list:
             contract_pos[contract['id']] = {}
         return contract_pos
+
+    def drop(self, contract):
+        self.holding_position[contract.strip('1234567890')].pop(contract)

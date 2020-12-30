@@ -22,7 +22,9 @@ class Exchange:
                 contract_name=contract['id'],
                 month_list=contract['month_list'],
                 init_margin_rate=contract['init_margin_rate'],
-                contract_unit=contract['contract_unit']
+                contract_unit=contract['contract_unit'],
+                open_comm=contract['open_comm'],
+                close_comm=contract['close_comm'],
             )
 
         return contract_dict
@@ -30,18 +32,3 @@ class Exchange:
     def renew_account(self):
         pass
 
-
-if __name__ == '__main__':
-
-    exchange = Exchange(
-        contract_list=[
-            {
-                'id': 'M',
-                'month_list': [1, 3, 5, 7, 8, 9, 11, 12]
-            },
-        ],
-        init_cash=10000000
-    )
-    ope_con = exchange.M_contract.renew_operate_contract(now_contract='M1905')
-
-    print(ope_con)
