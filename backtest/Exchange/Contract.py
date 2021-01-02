@@ -111,11 +111,9 @@ class Contract:
         :return:
         """
         main_contract = self.now_main_contract(now_date=now_date)
-        # hist_contract = [now_contract]
         if self.operate_contract != '':
             further_contract = [self.operate_contract]
             for _ in range(len(self.month_list)):
-                # hist_contract.append(self._contract_series.last_contract(now_contract=hist_contract[-1]))
                 further_contract.append(self._contract_series.next_contract(now_contract=further_contract[-1]))
             if main_contract in further_contract:
                 self.operate_contract = main_contract
@@ -144,30 +142,11 @@ class Contract:
             if contract not in now_open_contract:
                 self.data_dict.pop(contract)
 
-    def contract_price(self, contract, date, field):
-        if contract not in self.data_dict:
-            raise Exception('NOT OPEN CONTRACT')
-        print(self.data_dict[contract])
-        exit()
-        data = self.data_dict[contract].loc[self.data_dict[contract]['date'] == date, field]
-
     def get_contract_data(self, contract, now_date):
         try:
             data = self.data_dict[contract]
         except Exception as e:
+            print(e)
             raise Exception('Contract.get_contract_data ERROR: CONTRACT NOT IN DATA DICT')
         data = data.loc[data['trading_date'] == now_date]
         return data['close'].iloc[-1]
-
-
-
-if __name__ == '__main__':
-    m_contract = Contract(
-        contract_name='M',
-        month_list=[1, 3, 5, 7, 8, 9, 11, 12]
-    )
-    # new_contract = m_contract.renew_operate_contract(now_contract='M1905', now_date='2019-11-25')
-    # print(new_contract)
-
-    now_open_contract = m_contract.now_open_contract('2020-11-10')
-    print(now_open_contract)

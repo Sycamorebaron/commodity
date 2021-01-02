@@ -23,7 +23,7 @@ class MAStrategy(AbsStrategy):
 
     def cal_target_pos(self, contract, tm: str):
         data = contract.data_dict[contract.operate_contract]
-        data = data.loc[data['trading_date'] < pd.to_datetime(tm)]
+        data = data.loc[data['trading_date'] <= pd.to_datetime(tm)]
         data = data[['datetime', 'close']]
         data = data.resample(on='datetime', rule='1D').agg(
             {
@@ -39,14 +39,14 @@ class MAStrategy(AbsStrategy):
         for _ in range(0, len(self.para_list)):
             if last_trade_data[_] > last_trade_data[_ + 1]:
                 long_order += 1
-            else:
+            elif last_trade_data[_] < last_trade_data[_ + 1]:
                 long_order -= 1
+            else:
+                pass
 
-        return {contract.operate_contract: long_order / len(self.para_list)}
-
+        return {contract.operate_contract: long_order / len(self.para_list) * 0.7}
 
 
 if __name__ == '__main__':
 
     ma_strategy = MAStrategy(ma_para_list=[5, 10, 20, 60, 120])
-    ma_strategy.cal_signal(contract='M2101', tm='2020-11-10')
