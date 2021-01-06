@@ -1,10 +1,13 @@
 from backtest.Exchange.Exchange import Exchange
 from backtest.Agent.Agent import Agent
 from backtest.Agent.Strategy import MAStrategy
+from utils.base_para import OUTPUT_DATA_PATH
+import os
 
 
 class MainTest:
-    def __init__(self, begin_date, end_date, init_cash, contract_list):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list):
+        self.test_name = test_name
         self._begin_date = begin_date
         self.end_date = end_date
         self.exchange = Exchange(
@@ -49,11 +52,25 @@ class MainTest:
                     exchange=self.exchange,
                     target_pos=target_pos,
                 )
+                # 记录交易
+                self.agent.recorder.record_trade(info=trade_info)
 
                 # 每日结算
                 self.exchange.account.daily_settlement(
                     now_date=self.agent.earth_calender.now_date,
                     contract_dict=self.exchange.contract_dict
+                )
+
+                # 记录资金情况
+                self.agent.recorder.record_equity(
+                    info={
+                        'date': self.agent.earth_calender.now_date,
+                        'target_pos': target_pos,
+                        'position': self.exchange.account.position.holding_position,
+                        'cash': self.exchange.account.cash,
+                        'equity': self.exchange.account.equity,
+                        'risk_rate': self.exchange.account.risk_rate
+                    }
                 )
 
                 print('*' * 30)
@@ -66,11 +83,14 @@ class MainTest:
                 print('=' * 50)
             self.agent.earth_calender.next_day()
 
+        self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
+        self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))
 
 if __name__ == '__main__':
     main_test = MainTest(
+        test_name='test',
         begin_date='2011-01-01',
-        end_date='2020-11-26',
+        end_date='2012-11-26',
         init_cash=1000000,
         contract_list=[
                 {
