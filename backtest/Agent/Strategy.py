@@ -12,7 +12,7 @@ class AbsStrategy:
         )
         pass
 
-    def cal_signal(self, *args):
+    def cal_target_pos(self, *args):
         pass
 
 
@@ -21,30 +21,56 @@ class MAStrategy(AbsStrategy):
         AbsStrategy.__init__(self)
         self.para_list = ma_para_list
 
-    def cal_target_pos(self, contract, tm: str):
-        data = contract.data_dict[contract.operate_contract]
-        data = data.loc[data['trading_date'] <= pd.to_datetime(tm)]
-        data = data[['datetime', 'close']]
-        data = data.resample(on='datetime', rule='1D').agg(
-            {
-                'close': 'last'
-            }
-        )
-        data.dropna(inplace=True, axis=0)
-        for ma_turn in self.para_list:
-            data['ma_%s' % ma_turn] = data['close'].rolling(ma_turn).mean()
-        last_trade_data = list(data.iloc[-1])
-        long_order = 0
+    def cal_target_pos(self, contract_dict, tm: str):
+        rtn_pos = {}
+        for contract_id in contract_dict.keys():
 
-        for _ in range(0, len(self.para_list)):
-            if last_trade_data[_] > last_trade_data[_ + 1]:
-                long_order += 1
-            elif last_trade_data[_] < last_trade_data[_ + 1]:
-                long_order -= 1
-            else:
-                pass
+            contract = contract_dict[contract_id]
+            data = contract.data_dict[contract.operate_contract]
+            data = data.loc[data['trading_date'] <= pd.to_datetime(tm)]
+            data = data[['datetime', 'close']]
+            data = data.resample(on='datetime', rule='1D').agg(
+                {
+                    'close': 'last'
+                }
+            )
+            data.dropna(inplace=True, axis=0)
+            for ma_turn in self.para_list:
+                data['ma_%s' % ma_turn] = data['close'].rolling(ma_turn).mean()
+            last_trade_data = list(data.iloc[-1])
+            long_order = 0
 
-        return {contract.operate_contract: long_order / len(self.para_list) * 0.7}
+            for _ in range(0, len(self.para_list)):
+                if last_trade_data[_] > last_trade_data[_ + 1]:
+                    long_order += 1
+                elif last_trade_data[_] < last_trade_data[_ + 1]:
+                    long_order -= 1
+                else:
+                    pass
+            rtn_pos[contract.operate_contract] = long_order / len(self.para_list) * 0.7
+        return rtn_pos
+
+
+class ChangeMonthStrategy(AbsStrategy):
+    def __init__(self, para_list):
+        AbsStrategy.__init__(self)
+        self.para_list = para_list
+
+    def cal_target_pos(self, contract_dict, tm: str):
+        """
+        若当前是
+        :param contract:
+        :param tm:
+        :return:
+        """
+        for contract_id in contract_dict.keys():
+            contract = contract_dict[contract_id]
+            now_open_contract = contract.now_open_contract(now_date=tm)
+            print(now_open_contract)
+            exit()
+            data = contract.data_dict[contract.operate_contract]
+
+
 
 
 if __name__ == '__main__':
