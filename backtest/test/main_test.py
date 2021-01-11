@@ -30,68 +30,67 @@ class MainTest:
         每日进行的流程
         :return:
         """
-        # 交易日
-        if self.exchange.trade_calender.tradable_date(date=self.agent.earth_calender.now_date):
+        now_operate_contract = self.exchange.contract_dict['M'].operate_contract
+        self.exchange.contract_dict['M'].renew_open_contract(now_date=self.agent.earth_calender.now_date)
+        self.exchange.contract_dict['M'].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+        new_operate_contract = self.exchange.contract_dict['M'].operate_contract
 
-            now_operate_contract = self.exchange.contract_dict['M'].operate_contract
-            self.exchange.contract_dict['M'].renew_open_contract(now_date=self.agent.earth_calender.now_date)
-            self.exchange.contract_dict['M'].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
-            new_operate_contract = self.exchange.contract_dict['M'].operate_contract
-
-            if (now_operate_contract != '') & (now_operate_contract != new_operate_contract):
-                self.agent.contract_move_forward(
-                    exchange=self.exchange,
-                    now_operate_contract=now_operate_contract,
-                    new_operate_contract=new_operate_contract,
-                    now_date=self.agent.earth_calender.now_date
-                )
-
-            # 根据策略计算目标仓位
-            target_pos = self.agent.strategy.cal_target_pos(
-                contract=self.exchange.contract_dict['M'],
-                tm=self.agent.earth_calender.now_date
-            )
-            print(target_pos)
-            # 根据目标仓位调仓
-            trade_info = self.agent.change_position(
+        if (now_operate_contract != '') & (now_operate_contract != new_operate_contract):
+            self.agent.contract_move_forward(
                 exchange=self.exchange,
-                target_pos=target_pos,
-            )
-            # 记录交易
-            self.agent.recorder.record_trade(info=trade_info)
-
-            # 每日结算
-            self.exchange.account.daily_settlement(
-                now_date=self.agent.earth_calender.now_date,
-                contract_dict=self.exchange.contract_dict
+                now_operate_contract=now_operate_contract,
+                new_operate_contract=new_operate_contract,
+                now_date=self.agent.earth_calender.now_date
             )
 
-            # 记录资金情况
-            self.agent.recorder.record_equity(
-                info={
-                    'date': self.agent.earth_calender.now_date,
-                    'target_pos': target_pos,
-                    'position': self.exchange.account.position.holding_position,
-                    'cash': self.exchange.account.cash,
-                    'equity': self.exchange.account.equity,
-                    'risk_rate': self.exchange.account.risk_rate
-                }
-            )
+        # 根据策略计算目标仓位
+        target_pos = self.agent.strategy.cal_target_pos(
+            contract=self.exchange.contract_dict['M'],
+            tm=self.agent.earth_calender.now_date
+        )
+        print(target_pos)
+        # 根据目标仓位调仓
+        trade_info = self.agent.change_position(
+            exchange=self.exchange,
+            target_pos=target_pos,
+        )
+        # 记录交易
+        self.agent.recorder.record_trade(info=trade_info)
 
-            print('*' * 30)
-            print('DATE', self.agent.earth_calender.now_date)
-            print('POSITION', self.exchange.account.position.holding_position)
-            print('CASH', self.exchange.account.cash)
-            print('EQUITY', self.exchange.account.equity)
-            print('RISK RATE', self.exchange.account.risk_rate)
-            print('*' * 30)
-            print('=' * 50)
-        self.agent.earth_calender.next_day()
+        # 每日结算
+        self.exchange.account.daily_settlement(
+            now_date=self.agent.earth_calender.now_date,
+            contract_dict=self.exchange.contract_dict
+        )
+
+        # 记录资金情况
+        self.agent.recorder.record_equity(
+            info={
+                'date': self.agent.earth_calender.now_date,
+                'target_pos': target_pos,
+                'position': self.exchange.account.position.holding_position,
+                'cash': self.exchange.account.cash,
+                'equity': self.exchange.account.equity,
+                'risk_rate': self.exchange.account.risk_rate
+            }
+        )
+
+        print('*' * 30)
+        print('DATE', self.agent.earth_calender.now_date)
+        print('POSITION', self.exchange.account.position.holding_position)
+        print('CASH', self.exchange.account.cash)
+        print('EQUITY', self.exchange.account.equity)
+        print('RISK RATE', self.exchange.account.risk_rate)
+        print('*' * 30)
+        print('=' * 50)
 
     def test(self):
 
         while not self.agent.earth_calender.end_of_test():
-            self._daily_process()
+            # 交易日
+            if self.exchange.trade_calender.tradable_date(date=self.agent.earth_calender.now_date):
+                self._daily_process()
+            self.agent.earth_calender.next_day()
 
         self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
         self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))

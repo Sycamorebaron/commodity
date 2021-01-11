@@ -19,7 +19,7 @@ class Exchange:
         for contract in contract_info_list:
 
             contract_dict[contract['id']] = Contract(
-                contract_name=contract['id'],
+                commodity=contract['id'],
                 month_list=contract['month_list'],
                 init_margin_rate=contract['init_margin_rate'],
                 contract_unit=contract['contract_unit'],

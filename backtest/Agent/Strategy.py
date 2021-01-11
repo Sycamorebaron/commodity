@@ -66,7 +66,9 @@ class ChangeMonthStrategy(AbsStrategy):
         for contract_id in contract_dict.keys():
             contract = contract_dict[contract_id]
             now_open_contract = contract.now_open_contract(now_date=tm)
-            print(now_open_contract)
+            now_main_contract = contract.now_main_contract(now_date=tm)
+            print(tm, now_open_contract, now_main_contract)
+
             exit()
             data = contract.data_dict[contract.operate_contract]
 
