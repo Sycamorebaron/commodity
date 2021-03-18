@@ -70,6 +70,7 @@ class _ContractSeries:
 class Contract:
     def __init__(self, commodity, month_list, init_margin_rate, contract_unit, open_comm, close_comm):
         self.operate_contract = ''
+        self.sec_operate_contract = ''
         self.data_dict = {}
         self.data_fetcher = DataFetcher(database=eg)
         self.commodity = commodity
@@ -128,6 +129,19 @@ class Contract:
         volume_data.sort_values(by=volume_data.columns[1], inplace=True, ascending=False)
         return volume_data['index'].iloc[0]
 
+    def now_sec_main_contract(self, now_date):
+        """
+        找当前次主力合约
+        :param now_date:
+        :return:
+        """
+        # now_date = pd.to_datetime(now_date)
+        volume_data = self.contract_volume.loc[self.contract_volume['datetime'] == now_date].dropna(axis=1)
+        volume_data = volume_data[volume_data.columns[2:]].T.reset_index()
+
+        volume_data.sort_values(by=volume_data.columns[1], inplace=True, ascending=False)
+        return volume_data['index'].iloc[1]
+
     def renew_operate_contract(self, now_date):
         """
         根据下述规则更新操作合约:
@@ -146,6 +160,18 @@ class Contract:
         else:
             self.operate_contract = main_contract
 
+    def renew_sec_operate_contract(self, now_date):
+        """
+        次操作合约
+        :param now_date:
+        :return:
+        """
+        main_contract = self.now_main_contract(now_date=now_date)
+        if main_contract != self.operate_contract:
+            return main_contract
+        else:
+            return self.now_sec_main_contract(now_date=now_date)
+
     def now_open_contract(self, now_date):
         volume_data = self.contract_volume.loc[self.contract_volume['datetime'] == now_date].dropna(axis=1)
         volume_data = volume_data[volume_data.columns[2:]].T.reset_index()
@@ -157,7 +183,6 @@ class Contract:
         :param now_date:
         :return:
         """
-
         now_open_contract = self.now_open_contract(now_date=now_date)
         for contract in now_open_contract:
             if contract not in self.data_dict.keys():
