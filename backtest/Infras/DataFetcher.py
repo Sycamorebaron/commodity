@@ -26,6 +26,7 @@ class DataFetcher:
         data = pd.read_sql_query(sql, con=self._eg)
         return list(data['tablename'])
 
+
 if __name__ == '__main__':
     data_fetcher = DataFetcher(database=eg)
     data = data_fetcher.get_contract_data('M2105')
