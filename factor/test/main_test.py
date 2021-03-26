@@ -1,6 +1,6 @@
-from backtest.Exchange.Exchange import Exchange
-from backtest.Agent.Agent import Agent
-from backtest.Agent.Strategy import MAStrategy
+from factor.Exchange.Exchange import Exchange
+from factor.Agent.Agent import Agent
+from factor.Agent.Strategy import MAStrategy
 from utils.base_para import OUTPUT_DATA_PATH
 import os
 
@@ -94,6 +94,7 @@ class MainTest:
 
         self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
         self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))
+
 
 if __name__ == '__main__':
     main_test = MainTest(
