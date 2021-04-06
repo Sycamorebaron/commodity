@@ -5,12 +5,12 @@ import os
 
 
 class TradeCalender:
-    def __init__(self):
+    def __init__(self, local_data_path=''):
         self.is_trade_date = False
-        self._date = self.date_stream_init()
+        self.jump_date = DATA_CORRUPTED_LIST
+        self._date = self.date_stream_init(local_data_path=local_data_path)
 
-    @staticmethod
-    def date_stream_init(local_data_path=''):
+    def date_stream_init(self, local_data_path):
         if not local_data_path:
             sql = 'select * from "public"."szzs"'
             d = pd.read_sql_query(sql, con=eg)
@@ -18,6 +18,9 @@ class TradeCalender:
             d = pd.read_excel(os.path.join(local_data_path, 'public', 'szzs.xlsx'))
         d = d[['date', 'close']].copy()
         d['date'] = pd.to_datetime(d['date'])
+        d = d.loc[d['date'].apply(lambda x: x not in self.jump_date)]
+        d.reset_index(drop=True, inplace=True)
+
         return d
 
     # 检查传入的时间是否可交易
@@ -39,7 +42,7 @@ class TradeCalender:
         return pd.to_datetime(self._date.loc[self._date['date'].shift(-1) == date, 'date'].values[0])
 
     # 是否是本月第一个交易日
-    def if_first_trading_date(self, date):
+    def if_first_trading_date_monthly(self, date):
         if not self.tradable_date(date):
             return False
         else:
@@ -52,14 +55,13 @@ class TradeCalender:
     # 找某个月第一个交易日
     def get_monthly_first_trading_date(self, month):
         """
-
         :param month: '2019-01'
         :return:
         """
         now_earth_date = pd.to_datetime(month + '-01')
         while not self.tradable_date(now_earth_date):
             now_earth_date += timedelta(days=1)
-        return now_earth_date.strftime('%Y-%m-%d')
+        return now_earth_date
 
 
 if __name__ == '__main__':

@@ -12,7 +12,7 @@ class Exchange:
             init_cash=init_cash,
             contract_list=contract_list
         )
-        self.trade_calender = TradeCalender()
+        self.trade_calender = TradeCalender(local_data_path=r'D:\futures_data')
 
     def _gen_contract(self, contract_info_list):
         contract_dict = {}
@@ -20,6 +20,8 @@ class Exchange:
 
             contract_dict[contract['id']] = Contract(
                 commodity=contract['id'],
+                first_listed_date=contract['first_listed_date'],
+                last_de_listed_date=contract['last_de_listed_date'],
                 month_list=contract['month_list'],
                 init_margin_rate=contract['init_margin_rate'],
                 contract_unit=contract['contract_unit'],

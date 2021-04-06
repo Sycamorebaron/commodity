@@ -8,7 +8,10 @@ class ExcelDataFetcher:
 
     def get_contract_data(self, contract):
         commodity = contract.strip('1234567890')
+
         data = pd.read_csv(os.path.join(self.local_data_path, commodity, '%s.csv' % contract))
+
+
         data = data[[
             'order_book_id', 'datetime', 'open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover'
         ]].copy()
@@ -18,6 +21,7 @@ class ExcelDataFetcher:
 
     def get_data(self, dirname, file):
         data = pd.read_csv(os.path.join(self.local_data_path, dirname, '%s.csv' % file))
+
         return data
 
 
