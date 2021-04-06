@@ -11,7 +11,7 @@ class TradeCalender:
         self._date = self.date_stream_init(local_data_path=local_data_path)
 
     def date_stream_init(self, local_data_path):
-        if not local_data_path:
+        if not len(local_data_path):
             sql = 'select * from "public"."szzs"'
             d = pd.read_sql_query(sql, con=eg)
         else:

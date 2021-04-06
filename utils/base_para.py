@@ -8,7 +8,7 @@ DATA_PATH = os.path.join(ROOT_PATH, 'data')
 INPUT_DATA_PATH = os.path.join(DATA_PATH, 'input')
 OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'output')
 
-local_data_path = r'D:\futures_data'
+local_data_path = r'H:\futures_data'
 
 eg = create_engine('postgresql://postgres:thomas@localhost:5432/commodity')
 
