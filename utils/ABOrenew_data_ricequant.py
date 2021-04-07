@@ -16,7 +16,7 @@ class RQDataRenew:
                 )
         self.contract_info = rq.all_instruments(type='Future')
         self.local_data_path = local_data_path
-        self.contract_info.to_csv(os.path.join(local_data_path, 'contract_info.csv'), encoding='utf-8-sig')
+        self.contract_info.to_csv(os.path.join(local_data_path, 'public_contract_info.csv'), encoding='utf-8-sig')
         self.engine = engine
         print(self.contract_info)
 
@@ -27,11 +27,12 @@ class RQDataRenew:
                 local_contract = files
 
         for f in local_contract:
+
             if f[:-4] in list(self.contract_info['order_book_id']):
                 local_data = pd.read_csv(os.path.join(self.local_data_path, f))
                 if len(local_data) != 0:
-                    local_data.sort_values(by='trading_date', inplace=True)
-                    local_last_date = local_data['trading_date'].iloc[-1]
+                    local_data.sort_values(by='datetime', inplace=True)
+                    local_last_date = local_data['datetime'].iloc[-1]
                     maturity_date = self.contract_info.loc[
                         self.contract_info['order_book_id'] == f[:-4], 'maturity_date'].values[0]
 
@@ -90,8 +91,7 @@ class RQDataRenew:
                 fields=['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover'],
                 expect_df=True
             )
-            print(data)
-            exit()
+
             if type(data) == type(pd.DataFrame()):
                 data = data[['open', 'high', 'low', 'close', 'volume', 'open_interest',
                              'total_turnover']]
@@ -110,7 +110,7 @@ class RQDataRenew:
             if not len(data):
                 print(f, 'PASS')
                 continue
-            if f.startswith('contract_info'):
+            if f.startswith('public'):
                 continue
 
             data.sort_values(by='datetime', inplace=True)
@@ -130,7 +130,7 @@ if __name__ == '__main__':
         'c-7RpG39W8LVVGQfCoV3xoT1AbhJhQEh53JjIrq8ly6AFOnRhmTiEFQ01jsaG2Vc=dCeQGaTQbKjRLpXzg9Id09e8LUe_E3SZO99MriEW86'\
         'JCicssARrtWqOWp4Ncd0nDA9j4i8rIuf8sUGWQYenJe5siyHgxm9y2SUZugSu26aJJe1-hqCzHUB8TLHgM_Db92EAF0npNAFzCSitgmqztK'\
         'G4JDG2GjtYPs5_tTKlqqPI='
-    d_local_data_path = r'E:\futures_data'
+    d_local_data_path = r'D:\futures_data'
     d_engine = create_engine("postgresql://postgres:thomas@localhost:5432/futures")
 
     rq_data_renew = RQDataRenew(

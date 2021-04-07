@@ -2,13 +2,17 @@ import os
 import pandas as pd
 import multiprocessing
 from sqlalchemy import create_engine
+from sqlalchemy.schema import CreateSchema
 pd.set_option('expand_frame_repr', False)
 
 
-def to_database(data_set):
-    local_data_path = r'E:\futures_data'
+def to_database(data_set, proc_id):
+
+    local_data_path = r'D:\futures_data'
     engine = create_engine("postgresql://postgres:thomas@localhost:5432/futures")
+    i = 0
     for f in data_set:
+        print('PROC', proc_id, '||', i, '/' ,len(data_set), f)
         data = pd.read_csv(os.path.join(local_data_path, f))
         if not len(data):
             print(f, 'PASS')
@@ -19,9 +23,9 @@ def to_database(data_set):
 
         symbol = f[:-4].strip('1234567890')
 
-        # 创建schema
-        # if not self.engine.dialect.has_schema(self.engine, symbol):
-        #     self.engine.execute(CreateSchema(symbol))
+        # 如果schema不存在则创建
+        # if not engine.dialect.has_schema(engine, symbol):
+        #     engine.execute(CreateSchema(symbol))
         #     print(symbol)
         # else:
         #     print(f)
@@ -31,7 +35,8 @@ def to_database(data_set):
             'open_interest', 'total_turnover'
         ]]
         data.to_sql(f[:-4], con=engine, schema=symbol, if_exists='replace')
-        print(f, 'TO SQL')
+        # print(f, 'TO SQL')
+        i += 1
 
 def show(s):
     print('启动！')
@@ -39,12 +44,14 @@ def show(s):
 
 if __name__ == '__main__':
 
-    d_local_data_path = r'E:\futures_data'
+    d_local_data_path = r'D:\futures_data'
 
     local_data = []
+
     for roots, dirs, files in os.walk(d_local_data_path):
         if files:
             local_data = files
+    local_data = [i for i in local_data if i != 'contract_info.csv']
 
     pool = multiprocessing.Pool(processes=8)
 
@@ -59,7 +66,7 @@ if __name__ == '__main__':
 
         start += int(len(local_data) / n_set)
 
-        pool.apply_async(to_database, (t_data_set,))
+        pool.apply_async(to_database, (t_data_set, set, ))
         # pool.apply_async(show, (t_data_set,))
 
     pool.close()

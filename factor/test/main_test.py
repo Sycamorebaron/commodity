@@ -1,18 +1,19 @@
-from backtest.Exchange.Exchange import Exchange
-from backtest.Agent.Agent import Agent
-from backtest.Agent.Strategy import MAStrategy
-from utils.base_para import OUTPUT_DATA_PATH
+from factor.Exchange.Exchange import Exchange
+from factor.Agent.Agent import Agent
+from factor.Agent.Strategy import MAStrategy
+from utils.base_para import OUTPUT_DATA_PATH, local_data_path
 import os
 
 
 class MainTest:
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         self.test_name = test_name
         self._begin_date = begin_date
         self.end_date = end_date
         self.exchange = Exchange(
             contract_list=contract_list,
-            init_cash=init_cash
+            init_cash=init_cash,
+            local_data_path=local_data_path
         )
         self.agent = self._gen_agent(begin_date=begin_date, end_date=end_date)
 
@@ -95,6 +96,7 @@ class MainTest:
         self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
         self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))
 
+
 if __name__ == '__main__':
     main_test = MainTest(
         test_name='test',
@@ -110,6 +112,7 @@ if __name__ == '__main__':
                     'open_comm': 5,
                     'close_comm': 5,
                 },
-            ]
+            ],
+        local_data_path=local_data_path
     )
     main_test.test()
