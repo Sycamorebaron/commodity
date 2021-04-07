@@ -5,8 +5,6 @@ from datetime import timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.schema import CreateSchema
 
-
-
 pd.set_option('expand_frame_repr', False)
 
 
