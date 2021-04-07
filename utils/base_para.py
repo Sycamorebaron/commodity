@@ -1,6 +1,14 @@
-import os
+import os, sys
 from sqlalchemy import create_engine
 import pandas as pd
+
+system = sys.platform
+if system.startswith('win'):
+    local_data_path = r'C:\futures_data'
+elif system.startswith('linux'):
+    local_data_path = r'/home/sycamore/futures_data'
+else:
+    local_data_path = ''
 
 ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 DATA_PATH = os.path.join(ROOT_PATH, 'data')
@@ -8,7 +16,7 @@ DATA_PATH = os.path.join(ROOT_PATH, 'data')
 INPUT_DATA_PATH = os.path.join(DATA_PATH, 'input')
 OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'output')
 
-local_data_path = r'H:\futures_data'
+
 
 eg = create_engine('postgresql://postgres:thomas@localhost:5432/commodity')
 
