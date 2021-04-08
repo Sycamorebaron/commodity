@@ -255,3 +255,22 @@ class Contract:
         for contract in _now_ky:
             if contract not in [now_main_contract, now_sec_main_contract]:
                 self.data_dict.pop(contract)
+
+    def renew_main_contract(self, now_date):
+        """
+        更新当前的主力合约
+        :param now_date:
+        :return:
+        """
+
+        now_main_contract = self.now_main_contract(now_date=now_date)
+
+        for contract in [now_main_contract]:
+            if contract not in self.data_dict.keys():
+                self.data_dict[contract] = self.data_fetcher.get_contract_data(contract=contract)
+
+        _now_ky = list(self.data_dict.keys())
+
+        for contract in _now_ky:
+            if contract not in [now_main_contract]:
+                self.data_dict.pop(contract)
