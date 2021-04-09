@@ -119,7 +119,7 @@ class SingleCommTest(FactorTest):
             exit()
 
 
-class CalFactor(FactorTest):
+class RtnMoment(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.mean = []

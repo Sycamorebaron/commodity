@@ -1,10 +1,14 @@
-from factor.test.factor_test import RtnFactor
-from utils.base_para import *
+import sys
+import os
 import pandas as pd
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.append(BASE_DIR)
+
+from factor.test.factor_test import RtnFactor
+from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path, OUTPUT_DATA_PATH
+
 
 pd.set_option('expand_frame_repr', False)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append(BASE_DIR)
 
 
 if __name__ == '__main__':
