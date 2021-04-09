@@ -148,6 +148,25 @@ class RtnMoment(FactorTest):
 
             tem_mean[comm], tem_std[comm], tem_skew[comm], tem_kurt[comm] = self.t_factor(comm)
 
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            mean = pd.DataFrame(self.mean)
+            std = pd.DataFrame(self.std)
+            skew = pd.DataFrame(self.skew)
+            kurt = pd.DataFrame(self.kurt)
+            mean.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_mean.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            std.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_std.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            skew.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_skew.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            kurt.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_kurt.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
         self.mean.append(tem_mean)
         self.std.append(tem_std)
         self.skew.append(tem_skew)
