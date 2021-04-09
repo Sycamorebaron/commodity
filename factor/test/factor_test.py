@@ -119,33 +119,376 @@ class SingleCommTest(FactorTest):
             exit()
 
 
+class CalFactor(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.mean = []
+        self.std = []
+        self.skew = []
+        self.kurt = []
+        self.factor_name = factor_name
 
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_mean = {'date': self.agent.earth_calender.now_date}
+        tem_std = {'date': self.agent.earth_calender.now_date}
+        tem_skew = {'date': self.agent.earth_calender.now_date}
+        tem_kurt = {'date': self.agent.earth_calender.now_date}
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
 
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
 
+            tem_mean[comm], tem_std[comm], tem_skew[comm], tem_kurt[comm] = self.t_factor(comm)
 
+        self.mean.append(tem_mean)
+        self.std.append(tem_std)
+        self.skew.append(tem_skew)
+        self.kurt.append(tem_kurt)
 
-if __name__ == '__main__':
-    # factor_test = Cluster(
-    #     test_name='cluster_test',
-    #     begin_date='2011-01-01',
-    #     end_date='2020-12-31',
-    #     init_cash=10000000,
-    #     contract_list=FULL_CONTRACT_INFO,
-    #     cluster_months=2
-    # )
-    #
-    # factor_test.test()
+    def t_factor(self, comm):
 
-    single_comm_test = SingleCommTest(
-        test_name='cluster_test',
-        begin_date='2011-01-01',
-        end_date='2020-12-31',
-        init_cash=10000000,
-        contract_list=[
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )]
+
+        today_data = today_data.resample(on='datetime', rule='5T').agg(
             {
-                'id': 'RB', 'month_list': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 'first_listed_date': '2009-03-27',
-                'init_margin_rate': 0.2, 'contract_unit': 10.0, 'open_comm': 5, 'close_comm': 5
+                'order_book_id': 'last',
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum',
+                'open_interest': 'last',
+                'total_turnover': 'sum'
             }
-        ]
-    )
-    single_comm_test.test()
+        )
+        today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+        return today_data['rtn'].mean(), today_data['rtn'].std(ddof=1), today_data['rtn'].skew(), today_data['rtn'].kurtosis()
+
+
+class RtnFactor(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.first_5T_rtn = []
+        self.first_10T_rtn = []
+        self.first_30T_rtn = []
+        self.last_5T_rtn = []
+        self.last_10T_rtn = []
+        self.last_30T_rtn = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_first_5t = {'date': self.agent.earth_calender.now_date}
+        tem_first_10t = {'date': self.agent.earth_calender.now_date}
+        tem_first_30t = {'date': self.agent.earth_calender.now_date}
+        tem_last_5t = {'date': self.agent.earth_calender.now_date}
+        tem_last_10t = {'date': self.agent.earth_calender.now_date}
+        tem_last_30t = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_first_5t[comm], tem_first_10t[comm], tem_first_30t[comm], tem_last_5t[comm], tem_last_10t[
+                comm], tem_last_30t[comm] = self.t_factor(comm)
+
+        self.first_5T_rtn.append(tem_first_5t)
+        self.first_10T_rtn.append(tem_first_10t)
+        self.first_30T_rtn.append(tem_first_30t)
+
+        self.last_5T_rtn.append(tem_last_5t)
+        self.last_10T_rtn.append(tem_last_10t)
+        self.last_30T_rtn.append(tem_last_30t)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+
+            first_5t = pd.DataFrame(self.first_5T_rtn)
+            first_10t = pd.DataFrame(self.first_10T_rtn)
+            first_30t = pd.DataFrame(self.first_30T_rtn)
+            last_5t = pd.DataFrame(self.last_5T_rtn)
+            last_10t = pd.DataFrame(self.last_10T_rtn)
+            last_30t = pd.DataFrame(self.last_30T_rtn)
+
+            first_5t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_first_5t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            first_10t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_first_10t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            first_30t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_first_30t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+            last_5t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_last_5t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            last_10t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_last_10t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            last_30t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_last_30t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )]
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+
+        today_data = today_data.resample(on='datetime', rule='5T').agg(
+            {
+                'order_book_id': 'last',
+                'open': 'first',
+                'high': 'max',
+                'low': 'min',
+                'close': 'last',
+                'volume': 'sum',
+                'open_interest': 'last',
+                'total_turnover': 'sum'
+            }
+        )
+        today_data.reset_index(inplace=True)
+
+        first_5t_rtn = today_data['close'].iloc[0] / today_data['open'].iloc[0] - 1
+        first_10t_rtn = today_data['close'].iloc[1] / today_data['open'].iloc[0] - 1
+        first_30t_rtn = today_data['close'].iloc[5] / today_data['open'].iloc[0] - 1
+
+        last_5t_rtn = today_data['close'].iloc[-1] / today_data['open'].iloc[-1] - 1
+        last_10t_rtn = today_data['close'].iloc[-1] / today_data['open'].iloc[-2] - 1
+        last_30t_rtn = today_data['close'].iloc[-1] / today_data['open'].iloc[-5] - 1
+
+        return first_5t_rtn, first_10t_rtn, first_30t_rtn, last_5t_rtn, last_10t_rtn, last_30t_rtn
+
+
+class MomentumFactor(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.up_move_pct = []
+        self.except_last_30t = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_up_move_pct = {'date': self.agent.earth_calender.now_date}
+        tem_except_last_30t = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_up_move_pct[comm], tem_except_last_30t[comm] = self.t_factor(comm=comm)
+
+        self.up_move_pct.append(tem_up_move_pct)
+        self.except_last_30t.append(tem_except_last_30t)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+            int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            t_up_move_pct = pd.DataFrame(self.up_move_pct)
+            t_except_last_30t = pd.DataFrame(self.except_last_30t)
+
+            t_up_move_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_up_move_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_except_last_30t.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_except_last_30t.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )]
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+
+        today_data['move'] = (today_data['close'] - today_data['open']).apply(lambda x: abs(x))
+        up_move = today_data.loc[today_data['close'] > today_data['open'], 'move'].sum()
+        all_move = today_data['move'].sum()
+        up_move_pct = up_move / all_move if all_move else 0
+
+        except_last_30t = today_data['close'].iloc[-30] / today_data['open'].iloc[0]
+        return up_move_pct, except_last_30t
+
+
+class VolAmtSplit(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.morning_vol_pct = []
+        self.down_vol_pct = []
+        self.open_30t_vol_pct = []
+        self.last_30t_vol_pct =[]
+
+        self.morning_amt_pct = []
+        self.down_amt_pct = []
+        self.open_30t_amt_pct = []
+        self.last_30t_amt_pct =[]
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_morning_vol_pct = {'date': self.agent.earth_calender.now_date}
+        tem_down_vol_pct = {'date': self.agent.earth_calender.now_date}
+        tem_open_30t_vol_pct = {'date': self.agent.earth_calender.now_date}
+        tem_last_30t_vol_pct = {'date': self.agent.earth_calender.now_date}
+
+        tem_morning_amt_pct = {'date': self.agent.earth_calender.now_date}
+        tem_down_amt_pct = {'date': self.agent.earth_calender.now_date}
+        tem_open_30t_amt_pct = {'date': self.agent.earth_calender.now_date}
+        tem_last_30t_amt_pct = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_morning_vol_pct[comm], tem_down_vol_pct[comm], tem_open_30t_vol_pct[comm], tem_last_30t_vol_pct[comm
+            ], tem_morning_amt_pct[comm], tem_down_amt_pct[comm], tem_open_30t_amt_pct[comm], tem_last_30t_amt_pct[comm
+            ] = self.t_factor(comm=comm)
+
+        self.morning_vol_pct.append(tem_morning_vol_pct)
+        self.down_vol_pct.append(tem_down_vol_pct)
+        self.open_30t_vol_pct.append(tem_open_30t_vol_pct)
+        self.last_30t_vol_pct.append(tem_last_30t_vol_pct)
+
+        self.morning_amt_pct.append(tem_morning_amt_pct)
+        self.down_amt_pct.append(tem_down_amt_pct)
+        self.open_30t_amt_pct.append(tem_open_30t_amt_pct)
+        self.last_30t_amt_pct.append(tem_last_30t_amt_pct)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+            int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+
+            t_morning_vol_pct = pd.DataFrame(self.morning_vol_pct)
+            t_down_vol_pct = pd.DataFrame(self.down_vol_pct)
+            t_open_30t_vol_pct = pd.DataFrame(self.open_30t_vol_pct)
+            t_last_30t_vol_pct = pd.DataFrame(self.last_30t_vol_pct)
+
+            t_morning_amt_pct = pd.DataFrame(self.morning_amt_pct)
+            t_down_amt_pct = pd.DataFrame(self.down_amt_pct)
+            t_open_30t_amt_pct = pd.DataFrame(self.open_30t_amt_pct)
+            t_last_30t_amt_pct = pd.DataFrame(self.last_30t_amt_pct)
+
+            t_morning_vol_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_morning_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_down_vol_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_down_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_open_30t_vol_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_open_30t_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_last_30t_vol_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_last_30t_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_morning_amt_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_morning_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_down_amt_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_down_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_open_30t_amt_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_open_30t_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_last_30t_amt_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_last_30t_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )]
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+
+        today_data['amount'] = today_data['volume'] * today_data['close']
+
+        vol_sum = today_data['volume'].sum()
+        amt_sum = today_data['amt'].sum()
+
+        morning_vol_pct = today_data.loc[
+                              today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'volume'
+                          ].sum() / vol_sum
+        morning_amt_pct = today_data.loc[
+            today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'amt'
+                          ].sum() / amt_sum
+
+        down_vol_pct = today_data.loc[today_data['close'] > today_data['open'], 'volume'
+                       ].sum() / vol_sum
+        down_amt_pct = today_data.loc[today_data['close'] > today_data['open'], 'amt'
+                       ].sum() / amt_sum
+
+        open_30t_vol_pct = today_data[:30]['volume'].sum() / vol_sum
+        open_30t_amt_pct = today_data[:30]['amt'].sum() / amt_sum
+
+        last_30t_vol_pct = today_data[-30:]['volume'].sum() / vol_sum
+        last_30t_amt_pct = today_data[-30:]['amt'].sum() / amt_sum
+
+        return morning_vol_pct, down_vol_pct, open_30t_vol_pct, last_30t_vol_pct, morning_amt_pct, down_amt_pct, \
+               open_30t_amt_pct, last_30t_amt_pct
+
+
+
+
+
+
+
