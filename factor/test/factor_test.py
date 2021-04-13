@@ -161,20 +161,8 @@ class RtnMoment(FactorTest):
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         today_data = _data.loc[_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )]
+        )].copy()
 
-        today_data = today_data.resample(on='datetime', rule='5T').agg(
-            {
-                'order_book_id': 'last',
-                'open': 'first',
-                'high': 'max',
-                'low': 'min',
-                'close': 'last',
-                'volume': 'sum',
-                'open_interest': 'last',
-                'total_turnover': 'sum'
-            }
-        )
         today_data['rtn'] = today_data['close'] / today_data['open'] - 1
         return today_data['rtn'].mean(), today_data['rtn'].std(ddof=1), today_data['rtn'].skew(), today_data['rtn'].kurtosis()
 
@@ -259,7 +247,7 @@ class RtnFactor(FactorTest):
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         today_data = _data.loc[_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )]
+        )].copy()
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
 
         today_data = today_data.resample(on='datetime', rule='5T').agg(
@@ -337,7 +325,7 @@ class MomentumFactor(FactorTest):
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         today_data = _data.loc[_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )]
+        )].copy()
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -455,7 +443,7 @@ class VolAmtSplit(FactorTest):
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         today_data = _data.loc[_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )]
+        )].copy()
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -467,21 +455,21 @@ class VolAmtSplit(FactorTest):
 
         morning_vol_pct = today_data.loc[
                               today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'volume'
-                          ].sum() / vol_sum
+                          ].sum() / vol_sum if vol_sum != 0 else 0
         morning_amt_pct = today_data.loc[
             today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'amt'
-                          ].sum() / amt_sum
+                          ].sum() / amt_sum if amt_sum != 0 else 0
 
         down_vol_pct = today_data.loc[today_data['close'] > today_data['open'], 'volume'
-                       ].sum() / vol_sum
+                       ].sum() / vol_sum if vol_sum != 0 else 0
         down_amt_pct = today_data.loc[today_data['close'] > today_data['open'], 'amt'
-                       ].sum() / amt_sum
+                       ].sum() / amt_sum if amt_sum != 0 else 0
 
-        open_30t_vol_pct = today_data[:30]['volume'].sum() / vol_sum
-        open_30t_amt_pct = today_data[:30]['amt'].sum() / amt_sum
+        open_30t_vol_pct = today_data[:30]['volume'].sum() / vol_sum if vol_sum != 0 else 0
+        open_30t_amt_pct = today_data[:30]['amt'].sum() / amt_sum if amt_sum != 0 else 0
 
-        last_30t_vol_pct = today_data[-30:]['volume'].sum() / vol_sum
-        last_30t_amt_pct = today_data[-30:]['amt'].sum() / amt_sum
+        last_30t_vol_pct = today_data[-30:]['volume'].sum() / vol_sum if vol_sum != 0 else 0
+        last_30t_amt_pct = today_data[-30:]['amt'].sum() / amt_sum if amt_sum != 0 else 0
 
         return morning_vol_pct, down_vol_pct, open_30t_vol_pct, last_30t_vol_pct, morning_amt_pct, down_amt_pct, \
                open_30t_amt_pct, last_30t_amt_pct
@@ -543,7 +531,7 @@ class VolPrice(FactorTest):
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         today_data = _data.loc[_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )]
+        )].copy()
 
         today_data['rtn'] = today_data['close'] / today_data['close'].shift(1) - 1
         today_data['dvol'] = today_data['volume'] / today_data['volume'].shift(1) - 1
@@ -595,7 +583,7 @@ class MoneyFlow(FactorTest):
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         today_data = _data.loc[_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )]
+        )].copy()
 
         up_cond = today_data['close'] > today_data['open']
         down_cond = today_data['close'] < today_data['open']

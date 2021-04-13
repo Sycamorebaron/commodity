@@ -11,7 +11,7 @@ from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path, OUTPUT_DATA_P
 pd.set_option('expand_frame_repr', False)
 
 
-if __name__ == '__main__':
+def rtn_factor_cal():
     cal_factor = RtnFactor(
         factor_name='moment',
         begin_date='2010-01-04',
@@ -36,3 +36,7 @@ if __name__ == '__main__':
     l_last_5t.to_excel(os.path.join(OUTPUT_DATA_PATH, 'last_5t.xlsx'))
     l_last_10t.to_excel(os.path.join(OUTPUT_DATA_PATH, 'last_10t.xlsx'))
     l_last_30t.to_excel(os.path.join(OUTPUT_DATA_PATH, 'last_30t.xlsx'))
+
+
+if __name__ == '__main__':
+    rtn_factor_cal()
