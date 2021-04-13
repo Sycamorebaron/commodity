@@ -573,7 +573,7 @@ class MoneyFlow(FactorTest):
             money_flow = pd.DataFrame(self.money_flow)
 
             money_flow.to_excel(
-                os.path.join(OUTPUT_DATA_PATH, '%s_dvol_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+                os.path.join(OUTPUT_DATA_PATH, '%s_money_flow.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
             )
 
     def t_factor(self, comm):
@@ -594,3 +594,70 @@ class MoneyFlow(FactorTest):
                      (today_data['close'] * today_data['volume']).sum()
 
         return money_flow
+
+
+class BasisFactor(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.main_sec_basis = []
+        self.main_sec_basis_rv = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_main_sec_basis = {'date': self.agent.earth_calender.now_date}
+        tem_main_sec_basis_rv = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_main_sec_basis[comm], tem_main_sec_basis_rv[comm] = self.t_factor(comm)
+
+
+        self.main_sec_basis.append(tem_main_sec_basis)
+        self.main_sec_basis_rv.append(tem_main_sec_basis_rv)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            main_sec_basis = pd.DataFrame(self.main_sec_basis)
+            main_sec_basis_rv = pd.DataFrame(self.main_sec_basis_rv)
+
+            main_sec_basis.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_main_sec_basis.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            main_sec_basis_rv.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_main_sec_basis_rv.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        now_sec_main_contract = self.exchange.contract_dict[comm].now_sec_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _main_data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        _sec_data = self.exchange.contract_dict[comm].data_dict[now_sec_main_contract]
+
+        today_main = _main_data.loc[_main_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+        today_sec_main = _sec_data.loc[_sec_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+
+        today_main['sec'] = today_sec_main['close']
+        basis_rv = (today_main['close'] - today_main['sec']).std(ddof=1)
+        basis = (today_main['sec'] / today_main['close'] - 1).iloc[-1]
+
+        return basis, basis_rv
