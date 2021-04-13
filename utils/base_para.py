@@ -5,8 +5,10 @@ import pandas as pd
 system = sys.platform
 if system.startswith('win'):
     local_data_path = r'C:\futures_data'
+    local_data_path_5T = r'C:\futures_data_5T'
 elif system.startswith('linux'):
     local_data_path = r'/home/sycamore/futures_data'
+    local_data_path_5T = r'/home/sycamore/futures_data_5T'
 else:
     local_data_path = ''
 
