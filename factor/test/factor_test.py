@@ -487,8 +487,122 @@ class VolAmtSplit(FactorTest):
                open_30t_amt_pct, last_30t_amt_pct
 
 
+class VolPrice(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.dvol_rtn_corr = []
+        self.doi_rtn_corr = []
+        self.dvol_doi_corr = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_dvol_rtn_corr = {'date': self.agent.earth_calender.now_date}
+        tem_doi_rtn_corr = {'date': self.agent.earth_calender.now_date}
+        tem_dvol_doi_corr = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_dvol_rtn_corr[comm], tem_doi_rtn_corr[comm], tem_dvol_doi_corr[comm] = self.t_factor(comm)
+
+        self.dvol_rtn_corr.append(tem_dvol_rtn_corr)
+        self.doi_rtn_corr.append(tem_doi_rtn_corr)
+        self.dvol_doi_corr.append(tem_dvol_doi_corr)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            dvol_corr = pd.DataFrame(self.dvol_rtn_corr)
+            doi_corr = pd.DataFrame(self.doi_rtn_corr)
+            dvol_doi_corr = pd.DataFrame(self.dvol_doi_corr)
+
+            dvol_corr.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_dvol_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            doi_corr.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_doi_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            dvol_doi_corr.to_excel(
+                os.path.join(
+                    OUTPUT_DATA_PATH, '%s_dvol_doi_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y')
+                )
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )]
+
+        today_data['rtn'] = today_data['close'] / today_data['close'].shift(1) - 1
+        today_data['dvol'] = today_data['volume'] / today_data['volume'].shift(1) - 1
+        today_data['doi'] = today_data['open_interest'] / today_data['open_interest'].shift(1) - 1
+        corr_df = today_data[['rtn', 'dvol', 'doi']].corr()
+        dvol_rtn = corr_df.loc[corr_df == 'dvol', 'rtn'].values[0]
+        doi_rtn = corr_df.loc[corr_df == 'doi', 'rtn'].values[0]
+        dvol_doi = corr_df.loc[corr_df == 'dvol', 'doi'].values[0]
+        return dvol_rtn, doi_rtn, dvol_doi
 
 
+class MoneyFlow(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.money_flow = []
 
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_money_flow = {'date': self.agent.earth_calender.now_date}
 
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
 
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_money_flow[comm] = self.t_factor(comm)
+
+        self.money_flow.append(tem_money_flow)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            money_flow = pd.DataFrame(self.money_flow)
+
+            money_flow.to_excel(
+                os.path.join(OUTPUT_DATA_PATH, '%s_dvol_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )]
+
+        up_cond = today_data['close'] > today_data['open']
+        down_cond = today_data['close'] < today_data['open']
+        today_data['_close'] = 0
+        today_data.loc[up_cond, '_close'] = today_data['close']
+        today_data.loc[down_cond, '_close'] = -today_data['close']
+        money_flow = (today_data['_close'] * today_data['volume']).sum() / \
+                     (today_data['close'] * today_data['volume']).sum()
+
+        return money_flow

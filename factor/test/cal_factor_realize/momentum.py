@@ -5,7 +5,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.pa
 sys.path.append(BASE_DIR)
 
 from factor.test.factor_test import MomentumFactor
-from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path, OUTPUT_DATA_PATH
+from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path_5T, OUTPUT_DATA_PATH
 
 
 pd.set_option('expand_frame_repr', False)
@@ -14,11 +14,11 @@ pd.set_option('expand_frame_repr', False)
 if __name__ == '__main__':
     cal_factor = MomentumFactor(
         factor_name='moment',
-        begin_date='2010-01-04',
+        begin_date='2016-01-01',
         end_date='2021-02-28',
         init_cash=1000000,
         contract_list=NORMAL_CONTRACT_INFO,
-        local_data_path=local_data_path
+        local_data_path=local_data_path_5T
     )
 
     cal_factor.test()
