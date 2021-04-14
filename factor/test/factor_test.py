@@ -346,11 +346,15 @@ class VolAmtSplit(FactorTest):
         self.down_vol_pct = []
         self.open_30t_vol_pct = []
         self.last_30t_vol_pct =[]
+        self.open_30t_close_30t_vol = []
+        self.morning_afternoon_vol = []
 
         self.morning_amt_pct = []
         self.down_amt_pct = []
         self.open_30t_amt_pct = []
         self.last_30t_amt_pct =[]
+        self.open_30t_close_30t_amt = []
+        self.morning_afternoon_amt = []
 
     def _daily_process(self):
         print(self.agent.earth_calender.now_date)
@@ -358,11 +362,15 @@ class VolAmtSplit(FactorTest):
         tem_down_vol_pct = {'date': self.agent.earth_calender.now_date}
         tem_open_30t_vol_pct = {'date': self.agent.earth_calender.now_date}
         tem_last_30t_vol_pct = {'date': self.agent.earth_calender.now_date}
+        tem_open_30t_close_30t_vol = {'date': self.agent.earth_calender.now_date}
+        tem_morning_afternoon_vol = {'date': self.agent.earth_calender.now_date}
 
         tem_morning_amt_pct = {'date': self.agent.earth_calender.now_date}
         tem_down_amt_pct = {'date': self.agent.earth_calender.now_date}
         tem_open_30t_amt_pct = {'date': self.agent.earth_calender.now_date}
         tem_last_30t_amt_pct = {'date': self.agent.earth_calender.now_date}
+        tem_open_30t_close_30t_amt = {'date': self.agent.earth_calender.now_date}
+        tem_morning_afternoon_amt = {'date': self.agent.earth_calender.now_date}
 
         for comm in self.exchange.contract_dict.keys():
             # 未上市的商品
@@ -376,19 +384,25 @@ class VolAmtSplit(FactorTest):
             self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
             self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
 
-            tem_morning_vol_pct[comm], tem_down_vol_pct[comm], tem_open_30t_vol_pct[comm], tem_last_30t_vol_pct[comm
-            ], tem_morning_amt_pct[comm], tem_down_amt_pct[comm], tem_open_30t_amt_pct[comm], tem_last_30t_amt_pct[comm
-            ] = self.t_factor(comm=comm)
+            tem_morning_vol_pct[comm], tem_down_vol_pct[comm], tem_open_30t_vol_pct[comm], tem_last_30t_vol_pct[comm], \
+            tem_open_30t_close_30t_vol[comm], tem_morning_afternoon_vol[comm], tem_morning_amt_pct[comm], \
+            tem_down_amt_pct[comm], tem_open_30t_amt_pct[comm], tem_last_30t_amt_pct[comm], \
+            tem_open_30t_close_30t_amt[comm], tem_morning_afternoon_amt[comm] = self.t_factor(comm=comm)
 
         self.morning_vol_pct.append(tem_morning_vol_pct)
         self.down_vol_pct.append(tem_down_vol_pct)
         self.open_30t_vol_pct.append(tem_open_30t_vol_pct)
         self.last_30t_vol_pct.append(tem_last_30t_vol_pct)
+        self.open_30t_close_30t_vol.append(tem_open_30t_close_30t_vol)
+        self.morning_afternoon_vol.append(tem_morning_afternoon_vol)
 
         self.morning_amt_pct.append(tem_morning_amt_pct)
         self.down_amt_pct.append(tem_down_amt_pct)
         self.open_30t_amt_pct.append(tem_open_30t_amt_pct)
         self.last_30t_amt_pct.append(tem_last_30t_amt_pct)
+        self.open_30t_close_30t_amt.append(tem_open_30t_close_30t_amt)
+        self.morning_afternoon_amt.append(tem_morning_afternoon_amt)
+
 
         if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
             int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
@@ -397,11 +411,15 @@ class VolAmtSplit(FactorTest):
             t_down_vol_pct = pd.DataFrame(self.down_vol_pct)
             t_open_30t_vol_pct = pd.DataFrame(self.open_30t_vol_pct)
             t_last_30t_vol_pct = pd.DataFrame(self.last_30t_vol_pct)
+            t_open_30t_close_30t_vol = pd.DataFrame(self.open_30t_close_30t_vol)
+            t_morning_afternoon_vol = pd.DataFrame(self.morning_afternoon_vol)
 
             t_morning_amt_pct = pd.DataFrame(self.morning_amt_pct)
             t_down_amt_pct = pd.DataFrame(self.down_amt_pct)
             t_open_30t_amt_pct = pd.DataFrame(self.open_30t_amt_pct)
             t_last_30t_amt_pct = pd.DataFrame(self.last_30t_amt_pct)
+            t_open_30t_close_30t_amt = pd.DataFrame(self.open_30t_close_30t_amt)
+            t_morning_afternoon_amt = pd.DataFrame(self.morning_afternoon_amt)
 
             t_morning_vol_pct.to_excel(
                 os.path.join(OUTPUT_DATA_PATH,
@@ -419,6 +437,14 @@ class VolAmtSplit(FactorTest):
                 os.path.join(OUTPUT_DATA_PATH,
                              '%s_last_30t_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
             )
+            t_open_30t_close_30t_vol.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_open_30t_close_30t_vol.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_morning_afternoon_vol.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_morning_afternoon_vol.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
             t_morning_amt_pct.to_excel(
                 os.path.join(OUTPUT_DATA_PATH,
                              '%s_morning_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
@@ -434,6 +460,14 @@ class VolAmtSplit(FactorTest):
             t_last_30t_amt_pct.to_excel(
                 os.path.join(OUTPUT_DATA_PATH,
                              '%s_last_30t_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_open_30t_close_30t_amt.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_open_30t_close_30t_amt.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            t_morning_afternoon_amt.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_morning_afternoon_amt.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
             )
 
     def t_factor(self, comm):
@@ -453,26 +487,38 @@ class VolAmtSplit(FactorTest):
         vol_sum = today_data['volume'].sum()
         amt_sum = today_data['amt'].sum()
 
-        morning_vol_pct = today_data.loc[
-                              today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'volume'
-                          ].sum() / vol_sum if vol_sum != 0 else 0
-        morning_amt_pct = today_data.loc[
+        morning_vol = today_data.loc[
+            today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'volume'
+        ].sum()
+        morning_amount = today_data.loc[
             today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 12), 'amt'
-                          ].sum() / amt_sum if amt_sum != 0 else 0
+        ].sum()
+
+        morning_vol_pct = morning_vol / vol_sum if vol_sum != 0 else 0
+        morning_amt_pct = morning_amount / amt_sum if amt_sum != 0 else 0
 
         down_vol_pct = today_data.loc[today_data['close'] > today_data['open'], 'volume'
                        ].sum() / vol_sum if vol_sum != 0 else 0
         down_amt_pct = today_data.loc[today_data['close'] > today_data['open'], 'amt'
                        ].sum() / amt_sum if amt_sum != 0 else 0
 
-        open_30t_vol_pct = today_data[:30]['volume'].sum() / vol_sum if vol_sum != 0 else 0
-        open_30t_amt_pct = today_data[:30]['amt'].sum() / amt_sum if amt_sum != 0 else 0
+        open_30t_vol_pct = today_data[:6]['volume'].sum() / vol_sum if vol_sum != 0 else 0
+        open_30t_amt_pct = today_data[:6]['amt'].sum() / amt_sum if amt_sum != 0 else 0
 
-        last_30t_vol_pct = today_data[-30:]['volume'].sum() / vol_sum if vol_sum != 0 else 0
-        last_30t_amt_pct = today_data[-30:]['amt'].sum() / amt_sum if amt_sum != 0 else 0
+        last_30t_vol_pct = today_data[-6:]['volume'].sum() / vol_sum if vol_sum != 0 else 0
+        last_30t_amt_pct = today_data[-6:]['amt'].sum() / amt_sum if amt_sum != 0 else 0
 
-        return morning_vol_pct, down_vol_pct, open_30t_vol_pct, last_30t_vol_pct, morning_amt_pct, down_amt_pct, \
-               open_30t_amt_pct, last_30t_amt_pct
+        open_30t_close_30t_vol = today_data[:6]['volume'].sum() / today_data[-6:]['volume'].sum() \
+            if today_data[-6:]['volume'].sum() != 0 else 0
+        open_30t_close_30t_amt = today_data[:6]['amt'].sum() / today_data[-6:]['amt'].sum() \
+            if today_data[-6:]['amt'].sum() != 0 else 0
+
+        morning_afternoon_vol = morning_vol_pct / (1 - morning_vol_pct)
+        morning_afternoon_amt = morning_amt_pct / (1 - morning_amt_pct)
+
+        return morning_vol_pct, down_vol_pct, open_30t_vol_pct, last_30t_vol_pct, open_30t_close_30t_vol, \
+               morning_afternoon_vol, morning_amt_pct, down_amt_pct, open_30t_amt_pct, last_30t_amt_pct, \
+               open_30t_close_30t_amt, morning_afternoon_amt
 
 
 class VolPrice(FactorTest):
@@ -600,12 +646,18 @@ class BasisFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.main_sec_basis = []
+        self.open_basis = []
+        self.close_basis = []
         self.main_sec_basis_rv = []
+        self.mean_basis = []
 
     def _daily_process(self):
         print(self.agent.earth_calender.now_date)
         tem_main_sec_basis = {'date': self.agent.earth_calender.now_date}
         tem_main_sec_basis_rv = {'date': self.agent.earth_calender.now_date}
+        tem_open_basis = {'date': self.agent.earth_calender.now_date}
+        tem_close_basis = {'date': self.agent.earth_calender.now_date}
+        tem_mean_basis = {'date': self.agent.earth_calender.now_date}
 
         for comm in self.exchange.contract_dict.keys():
             # 未上市的商品
@@ -619,16 +671,22 @@ class BasisFactor(FactorTest):
             self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
             self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
 
-            tem_main_sec_basis[comm], tem_main_sec_basis_rv[comm] = self.t_factor(comm)
-
+            tem_main_sec_basis[comm], tem_main_sec_basis_rv[comm], tem_open_basis[comm], tem_close_basis[comm], \
+            tem_mean_basis[comm]= self.t_factor(comm)
 
         self.main_sec_basis.append(tem_main_sec_basis)
         self.main_sec_basis_rv.append(tem_main_sec_basis_rv)
+        self.open_basis.append(tem_open_basis)
+        self.close_basis.append(tem_close_basis)
+        self.mean_basis.append(tem_mean_basis)
 
         if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
                 int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
             main_sec_basis = pd.DataFrame(self.main_sec_basis)
             main_sec_basis_rv = pd.DataFrame(self.main_sec_basis_rv)
+            open_basis = pd.DataFrame(self.open_basis)
+            close_basis = pd.DataFrame(self.close_basis)
+            mean_basis = pd.DataFrame(self.mean_basis)
 
             main_sec_basis.to_excel(
                 os.path.join(OUTPUT_DATA_PATH,
@@ -637,6 +695,18 @@ class BasisFactor(FactorTest):
             main_sec_basis_rv.to_excel(
                 os.path.join(OUTPUT_DATA_PATH,
                              '%s_main_sec_basis_rv.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            open_basis.to_csv(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_open_basis.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            close_basis.to_csv(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_close_basis.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            mean_basis.to_csv(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_mean_basis.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
             )
 
     def t_factor(self, comm):
@@ -657,7 +727,11 @@ class BasisFactor(FactorTest):
         )].copy()
 
         today_main['sec'] = today_sec_main['close']
-        basis_rv = (today_main['close'] - today_main['sec']).std(ddof=1)
-        basis = (today_main['sec'] / today_main['close'] - 1).iloc[-1]
+        today_main['basis'] = today_main['sec'] / today_main['close'] - 1
+        basis_rv = today_main['basis'].std(ddof=1)
+        basis = today_main['basis'].iloc[-1]
+        open_basis = today_main['basis'][:6].mean()
+        close_basis = today_main['basis'][-6:].mean()
+        mean_basis = today_main['basis'].mean()
 
-        return basis, basis_rv
+        return basis, basis_rv, open_basis, close_basis, mean_basis
