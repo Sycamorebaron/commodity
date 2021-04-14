@@ -636,3 +636,10 @@ class BasisFactor(FactorTest):
         mean_basis = today_main['basis'].mean()
 
         return basis, basis_rv, open_basis, close_basis, mean_basis
+
+
+class PCAFactor(FactorTest):
+    pass
+
+class SVMFactor(FactorTest):
+    pass
