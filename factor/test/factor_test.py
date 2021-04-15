@@ -1,8 +1,7 @@
 from factor.test.main_test import MainTest
 from utils.base_para import *
-from dateutil.relativedelta import relativedelta
 import pandas as pd
-from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 
 pd.set_option('expand_frame_repr', False)
 
@@ -639,7 +638,126 @@ class BasisFactor(FactorTest):
 
 
 class PCAFactor(FactorTest):
-    pass
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.d_first_com = []
+        self.d_sec_com = []
+        self.first_com_range = []
+        self.sec_com_range = []
+        self.d_first_com_std = []
+        self.d_sec_com_std = []
+        self.first_explained_ratio = []
+        self.sec_explained_ratio = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_d_first_com = {'date': self.agent.earth_calender.now_date}
+        tem_d_sec_com = {'date': self.agent.earth_calender.now_date}
+        tem_first_com_range = {'date': self.agent.earth_calender.now_date}
+        tem_sec_com_range = {'date': self.agent.earth_calender.now_date}
+        tem_d_first_com_std = {'date': self.agent.earth_calender.now_date}
+        tem_d_sec_com_std = {'date': self.agent.earth_calender.now_date}
+        tem_first_explained_ratio = {'date': self.agent.earth_calender.now_date}
+        tem_sec_explained_ratio = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_d_first_com[comm], tem_d_sec_com[comm], tem_first_com_range[comm], tem_sec_com_range[comm], \
+            tem_d_first_com_std[comm], tem_d_sec_com_std[comm], tem_first_explained_ratio[comm], \
+            tem_sec_explained_ratio[comm] = self.t_factor(comm)
+
+        self.d_first_com.append(tem_d_first_com)
+        self.d_sec_com.append(tem_d_sec_com)
+        self.first_com_range.append(tem_first_com_range)
+        self.sec_com_range.append(tem_sec_com_range)
+        self.d_first_com_std.append(tem_d_first_com_std)
+        self.d_sec_com_std.append(tem_d_sec_com_std)
+        self.first_explained_ratio.append(tem_first_explained_ratio)
+        self.sec_explained_ratio.append(tem_sec_explained_ratio)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            d_first_com = pd.DataFrame(self.d_first_com)
+            d_sec_com = pd.DataFrame(self.d_sec_com)
+            first_com_range = pd.DataFrame(self.first_com_range)
+            sec_com_range = pd.DataFrame(self.sec_com_range)
+            d_first_com_std = pd.DataFrame(self.d_first_com_std)
+            d_sec_com_std = pd.DataFrame(self.d_sec_com_std)
+            first_explained_ratio = pd.DataFrame(self.first_explained_ratio)
+            sec_explained_ratio = pd.DataFrame(self.sec_explained_ratio)
+
+            d_first_com.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_first_com_rtn.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            d_sec_com.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_sec_com_rtn.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            first_com_range.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_first_com_range.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            sec_com_range.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_sec_com_range.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            d_first_com_std.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_first_com_rtn_std.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            d_sec_com_std.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_sec_com_rtn_std.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            first_explained_ratio.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_first_explained_ratio.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            sec_explained_ratio.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_sec_explained_ratio.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _main_data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _main_data.loc[_main_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+        data = today_data[['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']]
+        for col in ['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']:
+            data[col] = (data[col] - data[col].mean()) / data[col].std(ddof=1) if data[col].std(ddof=1) != 0 else 0
+        pca = PCA(n_components=3)
+        new_x = pca.fit_transform(data)
+        com_df = pd.DataFrame(new_x)
+
+        d_first_com = com_df[0].iloc[-1] - com_df[0].iloc[0]
+        d_sec_com = com_df[1].iloc[-1] - com_df[1].iloc[0]
+        first_com_range = (com_df[0].max() - com_df[0].min())
+        sec_com_range = (com_df[1].max() - com_df[1].min())
+        d_first_com_std = (com_df[0] - com_df[0].shift(1)).std(ddof=1)
+        d_sec_com_std = (com_df[1] - com_df[1].shift(1)).std(ddof=1)
+        first_explained_ratio = pca.explained_variance_ratio_[0]
+        sec_explained_ratio = pca.explained_variance_ratio_[1]
+
+        return d_first_com, d_sec_com, first_com_range, sec_com_range, d_first_com_std, d_sec_com_std, \
+               first_explained_ratio, sec_explained_ratio
+
 
 class SVMFactor(FactorTest):
-    pass
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+
