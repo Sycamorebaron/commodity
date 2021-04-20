@@ -72,7 +72,8 @@ class _ContractSeries:
 
 class Contract:
     def __init__(
-        self, commodity, first_listed_date, last_de_listed_date, month_list, init_margin_rate, contract_unit, open_comm, close_comm
+        self, commodity, first_listed_date, last_de_listed_date, month_list, init_margin_rate, contract_unit,
+        open_comm, close_comm, local_data_path
     ):
         self.operate_contract = ''
         self.first_listed_date = pd.to_datetime(first_listed_date)

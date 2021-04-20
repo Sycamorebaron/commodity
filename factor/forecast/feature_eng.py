@@ -24,12 +24,15 @@ class FeatureEng:
         dataset.dropna(subset=['rtn'], inplace=True, axis=0)
         dataset.reset_index(drop=True, inplace=True)
         dataset['f_rtn'] = dataset['rtn'].shift(-1)
-        dataset.dropna(how='any', axis=0, inplace=True)
+        print(dataset)
+        # dataset.dropna(how='all', axis=0, inplace=True)
         return dataset
 
     def _gen_factor(self, factor_list, factor_path):
+
         sum_factor_data = pd.DataFrame()
         for factor in factor_list:
+            print(factor)
             factor_data = pd.read_excel(os.path.join(factor_path, '%s.xlsx' % factor))[['date', self.comm]].copy()
             factor_data.columns = ['date', factor]
             if len(sum_factor_data):
@@ -41,12 +44,12 @@ class FeatureEng:
 
 
 if __name__ == '__main__':
-    _comm = 'FG'
-    comm_forecast = FeatureEng(
-        comm=_comm,
+
+    fg_forecast = FeatureEng(
+        comm='FG',
         target='main_day_rtn',
         rtn_data_path=OUTPUT_DATA_PATH,
-        factor_data_path=OUTPUT_DATA_PATH,
+        factor_data_path=r'C:\futures_factor',
         factor_list=['first_5t', 'first_10t', 'first_30t', 'last_5t', 'last_10t', 'last_30t']
     )
-    comm_forecast.dataset.to_excel(os.path.join(OUTPUT_DATA_PATH, '%s.xlsx' % _comm))
+    fg_forecast.dataset.to_excel(os.path.join(OUTPUT_DATA_PATH, '%s.xlsx' % fg_forecast.comm))

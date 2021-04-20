@@ -10,6 +10,7 @@ class MainTest:
         self.test_name = test_name
         self._begin_date = begin_date
         self.end_date = end_date
+
         self.exchange = Exchange(
             contract_list=contract_list,
             init_cash=init_cash,
@@ -96,23 +97,3 @@ class MainTest:
         self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
         self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))
 
-
-if __name__ == '__main__':
-    main_test = MainTest(
-        test_name='test',
-        begin_date='2011-01-01',
-        end_date='2012-11-26',
-        init_cash=1000000,
-        contract_list=[
-                {
-                    'id': 'M',
-                    'month_list': [1, 3, 5, 7, 8, 9, 11, 12],
-                    'init_margin_rate': 0.15,
-                    'contract_unit': 10,
-                    'open_comm': 5,
-                    'close_comm': 5,
-                },
-            ],
-        local_data_path=local_data_path
-    )
-    main_test.test()
