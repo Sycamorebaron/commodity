@@ -3,15 +3,16 @@ import os
 
 pd.set_option('expand_frame_repr', False)
 
-data_path = r'C:\futures_data'
-target_path = r'C:\futures_data_5T'
+data_path = r'/home/sycamore/futures_data'
+target_path = r'/home/sycamore/futures_data_5T'
 
 for roots, dirs, files in os.walk(data_path):
     if files:
         for f in files:
             d_path = os.path.join(roots, f)
             if not os.path.exists(os.path.join(target_path, roots.split('\\')[-1])):
-                os.makedirs(os.path.join(target_path, roots.split('\\')[-1]))
+
+                os.mkdir(os.path.join(target_path, roots.split('\\')[-1]))
             if roots.split('\\')[-1] == 'public':
                 continue
             else:
