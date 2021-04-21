@@ -11,7 +11,6 @@ class ExcelDataFetcher:
 
         data = pd.read_csv(os.path.join(self.local_data_path, commodity, '%s.csv' % contract))
 
-
         data = data[[
             'order_book_id', 'datetime', 'open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover'
         ]].copy()

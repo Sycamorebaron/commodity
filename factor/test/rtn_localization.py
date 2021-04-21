@@ -84,6 +84,7 @@ class RtnLocalDaily(MainTest):
             tem_rtn['%s_sec_main_night_rtn' % comm] = \
                 sec_main_night_close / sec_main_night_open - 1 if sec_main_night_open else ''
 
+
         self.rtn_list.append(tem_rtn)
 
 

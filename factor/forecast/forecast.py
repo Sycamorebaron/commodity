@@ -27,16 +27,21 @@ class Forecast:
 
 
 if __name__ == '__main__':
-    _comm = 'FG'
-    forecast = Forecast(
-        comm=_comm,
+    factor_list = []
+    for roots, dirs, files in os.walk(r'C:\futures_factor'):
+        if files:
+            factor_list = [i[:-5] for i in files]
+
+    fg_forecast = Forecast(
+        comm='FG',
         target='main_day_rtn',
         rtn_data_path=OUTPUT_DATA_PATH,
-        factor_data_path=OUTPUT_DATA_PATH,
-        factor_list=['first_5t', 'first_10t', 'first_30t', 'last_5t', 'last_10t', 'last_30t']
+        factor_data_path=r'C:\futures_factor',
+        factor_list=factor_list
     )
-    forecast.forecast(algo='ols')
-    forecast.dataset.to_excel('test_res.xlsx')
-    # forecast.feature_eng.dataset.to_excel('test_res.xlsx')
+    fg_forecast.dataset.to_excel(os.path.join(OUTPUT_DATA_PATH, 'fg_test_data.xlsx'))
+    exit()
+    fg_forecast.forecast(algo='ols')
+    fg_forecast.dataset.to_excel('test_res.xlsx')
 
 

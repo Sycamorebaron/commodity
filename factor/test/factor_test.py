@@ -15,6 +15,7 @@ class FactorTest(MainTest):
             # 交易日
             if self.exchange.trade_calender.tradable_date(date=self.agent.earth_calender.now_date):
                 self._daily_process()
+
             self.agent.earth_calender.next_day()
 
 
