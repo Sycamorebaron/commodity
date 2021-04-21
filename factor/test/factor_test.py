@@ -21,7 +21,7 @@ class FactorTest(MainTest):
 
 class RtnMoment(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.mean = []
         self.std = []
         self.skew = []
@@ -88,7 +88,7 @@ class RtnMoment(FactorTest):
 
 class RtnFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.first_5T_rtn = []
         self.first_10T_rtn = []
         self.first_30T_rtn = []
@@ -196,7 +196,7 @@ class RtnFactor(FactorTest):
 
 class MomentumFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.up_move_pct = []
         self.except_last_30t = []
 
@@ -260,7 +260,7 @@ class MomentumFactor(FactorTest):
 
 class VolAmtSplit(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.morning_vol_pct = []
         self.down_vol_pct = []
         self.open_30t_vol_pct = []
@@ -442,7 +442,7 @@ class VolAmtSplit(FactorTest):
 
 class VolPrice(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.dvol_rtn_corr = []
         self.doi_rtn_corr = []
         self.dvol_doi_corr = []
@@ -511,7 +511,7 @@ class VolPrice(FactorTest):
 
 class MoneyFlow(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.money_flow = []
 
     def _daily_process(self):
@@ -564,7 +564,7 @@ class MoneyFlow(FactorTest):
 
 class BasisFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.main_sec_basis = []
         self.open_basis = []
         self.close_basis = []
@@ -659,7 +659,7 @@ class BasisFactor(FactorTest):
 
 class PCAFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.d_first_com = []
         self.d_sec_com = []
         self.first_com_range = []
@@ -779,7 +779,7 @@ class PCAFactor(FactorTest):
 
 class UpDownFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.up_rtn_var = []
         self.down_rtn_var = []
         self.up_vol_pct = []
@@ -877,7 +877,7 @@ class UpDownFactor(FactorTest):
 class BigFactor(FactorTest):
     # 大单
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.vbig_rtn_mean = []
         self.vbig_rtn_vol = []
         self.vbig_rv_corr = []
@@ -983,6 +983,20 @@ class BigFactor(FactorTest):
         return vbig_rtn_mean, vbig_rtn_vol, vbig_rv_vorr, abig_rtn_mean, abig_rtn_vol, abig_ra_corr
 
 
+class Liquidity(FactorTest):
+    # 大单
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.amihud = []
+        self.roll_spread = []
+        self.LOT = []
+        self.pastor_gamma = []
 
+
+class SingularVol(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.BV = []
+        self.bollerslev_RSJ =[]
 
 
