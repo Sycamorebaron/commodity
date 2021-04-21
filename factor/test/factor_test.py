@@ -756,7 +756,7 @@ class PCAFactor(FactorTest):
         today_data = _main_data.loc[_main_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
         )].copy()
-        data = today_data[['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']]
+        data = today_data[['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']].copy()
         for col in ['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']:
             data[col] = (data[col] - data[col].mean()) / data[col].std(ddof=1) if data[col].std(ddof=1) != 0 else 0
         pca = PCA(n_components=3)
