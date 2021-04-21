@@ -62,7 +62,6 @@ class LongRtnLocalDaily(FactorTest):
         self.f5.append(tem_f5)
 
 
-
 if __name__ == '__main__':
     rtn_local = LongRtnLocalDaily(
         test_name='rtn_local',

@@ -758,7 +758,212 @@ class PCAFactor(FactorTest):
                first_explained_ratio, sec_explained_ratio
 
 
-class SVMFactor(FactorTest):
+class UpDownFactor(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.up_rtn_var = []
+        self.down_rtn_var = []
+        self.up_vol_pct = []
+        self.up_amt_pct = []
+        self.trend_ratio = []  # 日内价格变化/分钟频价格变化绝对值
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_up_rtn_var = {'date': self.agent.earth_calender.now_date}
+        tem_down_rtn_var = {'date': self.agent.earth_calender.now_date}
+        tem_up_vol_pct = {'date': self.agent.earth_calender.now_date}
+        tem_up_amt_pct = {'date': self.agent.earth_calender.now_date}
+        tem_trend_ratio = {'date': self.agent.earth_calender.now_date}
+
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_up_rtn_var[comm], tem_down_rtn_var[comm], tem_up_vol_pct[comm], tem_up_amt_pct[comm], \
+            tem_trend_ratio[comm] = self.t_factor(comm)
+
+        self.up_rtn_var.append(tem_up_rtn_var)
+        self.down_rtn_var.append(tem_down_rtn_var)
+        self.up_vol_pct.append(tem_up_vol_pct)
+        self.up_amt_pct.append(tem_up_amt_pct)
+        self.trend_ratio.append(tem_trend_ratio)
+
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            up_rtn_var = pd.DataFrame(self.up_rtn_var)
+            down_rtn_var = pd.DataFrame(self.down_rtn_var)
+            up_vol_pct = pd.DataFrame(self.up_vol_pct)
+            up_amt_pct = pd.DataFrame(self.up_amt_pct)
+            trend_ratio = pd.DataFrame(self.trend_ratio)
+
+            up_rtn_var.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_up_rtn_var.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            down_rtn_var.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_down_rtn_var.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            up_vol_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_up_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            up_amt_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_up_amt_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            trend_ratio.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_trend_ratio.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+
+        today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+        up_rtn_cond = today_data['close'] > today_data['open']
+        down_rtn_cond = today_data['close'] < today_data['open']
+        up_rtn_var = today_data.loc[up_rtn_cond, 'rtn'].std(ddof=1) if len(today_data.loc[up_rtn_cond]) else 0
+        down_rtn_var = today_data.loc[down_rtn_cond, 'rtn'].std(ddof=1) if len(today_data.loc[down_rtn_cond]) else 0
+
+        today_data['amt'] = today_data['close'] * today_data['volume']
+        up_vol_pct = today_data.loc[up_rtn_cond, 'volume'].sum() / today_data['volume'].sum() \
+            if len(today_data.loc[up_rtn_cond]) else 0
+        up_amt_pct = today_data.loc[up_rtn_cond, 'amt'].sum() / today_data['amt'].sum() \
+            if len(today_data.loc[up_rtn_cond]) else 0
+        trend_ratio = (today_data['close'] - today_data['open']).abs().sum() / \
+                      (today_data['close'].iloc[-1] - today_data['open'].iloc[0])
+        return up_rtn_var, down_rtn_var, up_vol_pct, up_amt_pct, trend_ratio
+
+
+class BigFactor(FactorTest):
+    # 大单
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        MainTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.vbig_rtn_mean = []
+        self.vbig_rtn_vol = []
+        self.vbig_rv_corr = []
+
+        self.abig_rtn_mean = []
+        self.abig_rtn_vol = []
+        self.abig_ra_corr = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_vbig_rtn_mean = {'date': self.agent.earth_calender.now_date}
+        tem_vbig_rtn_vol = {'date': self.agent.earth_calender.now_date}
+        tem_vbig_rv_corr = {'date': self.agent.earth_calender.now_date}
+
+        tem_abig_rtn_mean = {'date': self.agent.earth_calender.now_date}
+        tem_abig_rtn_vol = {'date': self.agent.earth_calender.now_date}
+        tem_abig_ra_corr = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_vbig_rtn_mean[comm], tem_vbig_rtn_vol[comm], tem_vbig_rv_corr[comm], tem_abig_rtn_mean[comm], \
+            tem_abig_rtn_vol[comm], tem_abig_ra_corr[comm] = self.t_factor(comm)
+
+        self.vbig_rtn_mean.append(tem_vbig_rtn_mean)
+        self.vbig_rtn_vol.append(tem_vbig_rtn_vol)
+        self.vbig_rv_corr.append(tem_vbig_rv_corr)
+        self.abig_rtn_mean.append(tem_abig_rtn_mean)
+        self.abig_rtn_vol.append(tem_abig_rtn_vol)
+        self.abig_ra_corr.append(tem_abig_ra_corr)
+
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            vbig_rtn_mean = pd.DataFrame(self.vbig_rtn_mean)
+            vbig_rtn_vol = pd.DataFrame(self.vbig_rtn_vol)
+            vbig_rv_corr = pd.DataFrame(self.vbig_rv_corr)
+
+            abig_rtn_mean = pd.DataFrame(self.abig_rtn_mean)
+            abig_rtn_vol = pd.DataFrame(self.abig_rtn_vol)
+            abig_ra_corr = pd.DataFrame(self.abig_ra_corr)
+
+            vbig_rtn_mean.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_vbig_rtn_mean.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            vbig_rtn_vol.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_vbig_rtn_vol.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            vbig_rv_corr.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_vbig_rv_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            abig_rtn_mean.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_abig_rtn_mean.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            abig_rtn_vol.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_abig_rtn_vol.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            abig_ra_corr.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_abig_ra_corr.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+        today_data['amt'] = today_data['close'] * today_data['volume']
+
+        vbig_cond = today_data['volume'] > today_data['volume'].quantile(0.67)
+        abig_cond = today_data['amt'] > today_data['amt'].quantile(0.67)
+
+        vbig_rtn_mean = today_data.loc[vbig_cond, 'rtn'].mean() if len(today_data.loc[vbig_cond]) else 0
+        vbig_rtn_vol = today_data.loc[vbig_cond, 'rtn'].std(ddof=1) if len(today_data.loc[vbig_cond]) else 0
+        vbig_rv_vorr = today_data.loc[vbig_cond, ['rtn', 'volume']].corr().iloc[0, 1] \
+            if len(today_data.loc[vbig_cond]) else 0
+
+        abig_rtn_mean = today_data.loc[abig_cond, 'rtn'].mean() if len(today_data.loc[abig_cond]) else 0
+        abig_rtn_vol = today_data.loc[abig_cond, 'rtn'].std(ddof=1) if len(today_data.loc[abig_cond]) else 0
+        abig_ra_corr = today_data.loc[abig_cond, ['rtn', 'amt']].corr().iloc[0, 1] \
+            if len(today_data.loc[abig_cond]) else 0
+
+        return vbig_rtn_mean, vbig_rtn_vol, vbig_rv_vorr, abig_rtn_mean, abig_rtn_vol, abig_ra_corr
+
+
+
+
 

@@ -8,15 +8,21 @@ from matplotlib import pyplot as plt
 pd.set_option('expand_frame_repr', False)
 
 data_path = 'D:\commodity\data\output'
-raw_data = pd.read_excel(os.path.join(data_path, 'fg_test_data.xlsx'))
+factor_raw_data = pd.read_excel(os.path.join(data_path, 'fg_test_data.xlsx'))
+factor_raw_data['date'] = pd.DataFrame(factor_raw_data['date'])
 
-future_days = 5
-raw_data['f%s_rtn' % future_days] = \
-    raw_data['f_rtn'].rolling(future_days).apply(lambda x: (1 + x).cumprod().iloc[-1] - 1)
+rtn_data = pd.read_excel(os.path.join(data_path, 'f5_rtn.xlsx'))
+rtn_data = rtn_data[['date', 'FG']]
+rtn_data['date'] = pd.DataFrame(rtn_data['date'])
 
-raw_data.to_csv(r'C:\Users\sycam\Desktop\raw.csv')
-print(raw_data)
-exit()
+data = factor_raw_data.merge(rtn_data, on='date', how='inner')
+print(data)
+data.to_excel(r'C:\Users\sycam\Desktop\fg_test.xlsx')
+for col in data.columns[3: -2]:
+    t_data = data[[col, 'FG']].copy()
+    print(t_data.corr())
+    print(t_data.corr().iloc[0, 1])
+    exit()
 
 # train_data = raw_data[:1000].copy()
 # test_data = raw_data[1000:].copy()
