@@ -2,6 +2,8 @@ from factor.test.main_test import MainTest
 from utils.base_para import *
 import pandas as pd
 from sklearn.decomposition import PCA
+import numpy as np
+import statsmodels.api as sm
 
 pd.set_option('expand_frame_repr', False)
 
@@ -984,7 +986,6 @@ class BigFactor(FactorTest):
 
 
 class Liquidity(FactorTest):
-    # 大单
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.amihud = []
@@ -992,11 +993,157 @@ class Liquidity(FactorTest):
         self.LOT = []
         self.pastor_gamma = []
 
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_amihud = {'date': self.agent.earth_calender.now_date}
+        tem_roll_spread = {'date': self.agent.earth_calender.now_date}
+        tem_LOT = {'date': self.agent.earth_calender.now_date}
+        tem_pastor_gamma = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_amihud[comm], tem_roll_spread[comm], tem_LOT[comm], tem_pastor_gamma[comm] = self.t_factor(comm)
+
+        self.amihud.append(tem_amihud)
+        self.roll_spread.append(tem_roll_spread)
+        self.LOT.append(tem_LOT)
+        self.pastor_gamma.append(tem_pastor_gamma)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            amihud = pd.DataFrame(self.amihud)
+            roll_spread = pd.DataFrame(self.roll_spread)
+            LOT = pd.DataFrame(self.LOT)
+            pastor_gamma = pd.DataFrame(self.pastor_gamma)
+
+            amihud.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_amihud.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            roll_spread.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_roll_spread.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            LOT.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_LOT.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            pastor_gamma.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_pastor_gamma.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+        today_data['amt'] = today_data['close'] * today_data['volume']
+
+        amihud = abs(today_data['close'].iloc[-1] / today_data['open'].iloc[0] - 1) / today_data['amt'].sum()
+        today_data['dp'] = today_data['close'] - today_data['close'].shift(1)
+        today_data['dp_1'] = today_data['dp'].shift(1)
+        _d = today_data[1:].copy()
+        cov = _d['dp'].cov(_d['dp_1'])
+        roll_spread = -2 * np.sqrt(-cov) if cov > 0 else 0
+        LOT = len(today_data.loc[today_data['open'] == today_data['close']]) / len(today_data)
+
+        today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+        today_data['x'] = (today_data['rtn'].apply(lambda x : 1 if x >= 0 else -1) * today_data['volume']).shift(1)
+        x = today_data[1:]['x'].copy()
+        y = today_data[1:]['rtn'].copy()
+        model = sm.OLS(endog=y, exog=x)
+        res = model.fit()
+        pastor_gamma = dict(res.params)['x']
+
+        return amihud, roll_spread, LOT, pastor_gamma
+
 
 class SingularVol(FactorTest):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.BV = []
+        self.BV_sigma = []
         self.bollerslev_RSJ =[]
 
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_BV = {'date': self.agent.earth_calender.now_date}
+        tem_BV_sigma = {'date': self.agent.earth_calender.now_date}
+        tem_bollerslev_RSJ = {'date': self.agent.earth_calender.now_date}
 
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_BV[comm], tem_BV_sigma[comm], tem_bollerslev_RSJ[comm] = self.t_factor(comm)
+
+        self.BV.append(tem_BV)
+        self.BV_sigma.append(tem_BV_sigma)
+        self.bollerslev_RSJ.append(tem_bollerslev_RSJ)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            BV = pd.DataFrame(self.BV)
+            BV_sigma = pd.DataFrame(self.BV_sigma)
+            bollerslev_RSJ = pd.DataFrame(self.bollerslev_RSJ)
+
+            BV.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_BV.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            BV_sigma.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_BV_sigma.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            bollerslev_RSJ.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_bollerslev_RSJ.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+
+        today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+        BV = (today_data['rtn'].abs() * today_data['rtn'].shift(1)).sum() / (len(today_data) - 2)
+        BV_sigma = np.sqrt(BV)
+
+        bollerslev_RSJ = \
+            (today_data.loc[today_data['rtn'] > 0, 'rtn'].std(ddof=1) -
+             today_data.loc[today_data['rtn'] < 0, 'rtn'].std(ddof=1)) / today_data['rtn'].std(ddof=1)
+
+        return BV, BV_sigma, bollerslev_RSJ
