@@ -1147,3 +1147,4 @@ class SingularVol(FactorTest):
              today_data.loc[today_data['rtn'] < 0, 'rtn'].std(ddof=1)) / today_data['rtn'].std(ddof=1)
 
         return BV, BV_sigma, bollerslev_RSJ
+
