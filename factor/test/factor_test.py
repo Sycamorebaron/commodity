@@ -543,7 +543,7 @@ class MoneyFlow(FactorTest):
             money_flow.to_excel(
                 os.path.join(OUTPUT_DATA_PATH, '%s_money_flow.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
             )
-
+ 
     def t_factor(self, comm):
         now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
             now_date=self.agent.earth_calender.now_date
@@ -872,7 +872,9 @@ class UpDownFactor(FactorTest):
         up_amt_pct = today_data.loc[up_rtn_cond, 'amt'].sum() / today_data['amt'].sum() \
             if len(today_data.loc[up_rtn_cond]) else 0
         trend_ratio = (today_data['close'] - today_data['open']).abs().sum() / \
-                      (today_data['close'].iloc[-1] - today_data['open'].iloc[0])
+                      (today_data['close'].iloc[-1] - today_data['open'].iloc[0]) if \
+            (today_data['close'].iloc[-1] != today_data['open'].iloc[0]) else 0
+
         return up_rtn_var, down_rtn_var, up_vol_pct, up_amt_pct, trend_ratio
 
 
@@ -968,6 +970,7 @@ class BigFactor(FactorTest):
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
         today_data['amt'] = today_data['close'] * today_data['volume']
+        today_data['rtn'] = today_data['close'] / today_data['open'] - 1
 
         vbig_cond = today_data['volume'] > today_data['volume'].quantile(0.67)
         abig_cond = today_data['amt'] > today_data['amt'].quantile(0.67)
@@ -1056,12 +1059,13 @@ class Liquidity(FactorTest):
         today_data.reset_index(inplace=True)
         today_data['amt'] = today_data['close'] * today_data['volume']
 
-        amihud = abs(today_data['close'].iloc[-1] / today_data['open'].iloc[0] - 1) / today_data['amt'].sum()
+        amihud = abs(today_data['close'].iloc[-1] / today_data['open'].iloc[0] - 1) / today_data['amt'].sum() \
+            if today_data['amt'].sum() > 0 else 0
         today_data['dp'] = today_data['close'] - today_data['close'].shift(1)
         today_data['dp_1'] = today_data['dp'].shift(1)
         _d = today_data[1:].copy()
         cov = _d['dp'].cov(_d['dp_1'])
-        roll_spread = -2 * np.sqrt(-cov) if cov > 0 else 0
+        roll_spread = -2 * np.sqrt(-cov) if cov < 0 else 0
         LOT = len(today_data.loc[today_data['open'] == today_data['close']]) / len(today_data)
 
         today_data['rtn'] = today_data['close'] / today_data['open'] - 1
@@ -1140,11 +1144,12 @@ class SingularVol(FactorTest):
 
         today_data['rtn'] = today_data['close'] / today_data['open'] - 1
         BV = (today_data['rtn'].abs() * today_data['rtn'].shift(1)).sum() / (len(today_data) - 2)
-        BV_sigma = np.sqrt(BV)
+        BV_sigma = np.sqrt(BV) if BV > 0 else 0
 
         bollerslev_RSJ = \
             (today_data.loc[today_data['rtn'] > 0, 'rtn'].std(ddof=1) -
-             today_data.loc[today_data['rtn'] < 0, 'rtn'].std(ddof=1)) / today_data['rtn'].std(ddof=1)
+             today_data.loc[today_data['rtn'] < 0, 'rtn'].std(ddof=1)) / today_data['rtn'].std(ddof=1) if \
+                today_data['rtn'].std(ddof=1) > 0 else 0
 
         return BV, BV_sigma, bollerslev_RSJ
 
