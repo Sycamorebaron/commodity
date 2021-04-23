@@ -1153,3 +1153,92 @@ class SingularVol(FactorTest):
 
         return BV, BV_sigma, bollerslev_RSJ
 
+
+class Others(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.smart_money_vol_pct = []
+        self.CVaR = []
+        self.VCVaR = []
+        self.vwap_move_pct = []
+
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_smart_money_vol_pct = {'date': self.agent.earth_calender.now_date}
+        tem_CVaR = {'date': self.agent.earth_calender.now_date}
+        tem_VCVaR = {'date': self.agent.earth_calender.now_date}
+        tem_vwap_move_pct = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_smart_money_vol_pct[comm], tem_CVaR[comm], tem_VCVaR[comm], tem_vwap_move_pct[comm] = \
+                self.t_factor(comm)
+
+        self.smart_money_vol_pct.append(tem_smart_money_vol_pct)
+        self.CVaR.append(tem_CVaR)
+        self.VCVaR.append(tem_VCVaR)
+        self.vwap_move_pct.append(tem_vwap_move_pct)
+
+        if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+            smart_money_vol_pct = pd.DataFrame(self.smart_money_vol_pct)
+            CVaR = pd.DataFrame(self.CVaR)
+            VCVaR = pd.DataFrame(self.VCVaR)
+            vwap_move_pct = pd.DataFrame(self.vwap_move_pct)
+
+            smart_money_vol_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_smart_money_vol_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            CVaR.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_CVaR.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            VCVaR.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_VCVaR.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+            vwap_move_pct.to_excel(
+                os.path.join(OUTPUT_DATA_PATH,
+                             '%s_vwap_move_pct.xlsx' % self.agent.earth_calender.now_date.strftime('%Y'))
+            )
+
+    def t_factor(self, comm):
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
+        today_data.reset_index(inplace=True)
+
+        today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
+        today_data['st'] = 0
+        today_data.loc[today_data['volume'] != 0, 'st'] = \
+            today_data['rtn'].abs() / today_data['volume'].apply(lambda x: np.sqrt(x))
+        smart_money_vol_pct = today_data.loc[today_data['st'] >= today_data['st'].quantile(0.7), 'volume'].sum() / \
+                              today_data['volume'].sum() if today_data['volume'].sum() != 0 else 0
+
+        cvar = today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'rtn'].mean()
+        today_data['v_rtn'] = today_data['rtn'] * today_data['volume']
+        vcvar = today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'v_rtn'].sum() / \
+                today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'volume'].sum()
+
+        today_data['move'] = today_data['close'] - today_data['open']
+        vwap_move_pct = (today_data['move'] * today_data['volume']).sum() / today_data['volume'].sum()
+        return smart_money_vol_pct, cvar, vcvar, vwap_move_pct
