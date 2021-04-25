@@ -6,9 +6,11 @@ system = sys.platform
 if system.startswith('win'):
     local_data_path = r'C:\futures_data'
     local_data_path_5T = r'C:\futures_data_5T'
+    local_factor_data_path = r'C:\futures_factor'
 elif system.startswith('linux'):
     local_data_path = r'/home/sycamore/futures_data'
     local_data_path_5T = r'/home/sycamore/futures_data_5T'
+    local_factor_data_path = r'/home/sycamore/futures_factor_1T'
 else:
     local_data_path = ''
 
@@ -17,6 +19,7 @@ DATA_PATH = os.path.join(ROOT_PATH, 'data')
 
 INPUT_DATA_PATH = os.path.join(DATA_PATH, 'input')
 OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'output')
+COMM_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'comm_factor')
 
 
 
@@ -53,7 +56,9 @@ DEAD_CONTRACT_INFO = \
          'init_margin_rate': 0.2, 'contract_unit': 10.0, 'open_comm': 5, 'close_comm': 5},
     ]
 
-ABO_LIST = ['BB', 'IF', 'IH', 'IC', 'JR', 'LR', 'PM', 'RI', 'RR', 'RS', 'T', 'TS', 'TF', 'WH', 'WR', 'WS', 'S', 'FU']
+ABO_LIST = [
+    'BB', 'IF', 'IH', 'IC', 'JR', 'LR', 'PM', 'RI', 'RR', 'RS', 'T', 'TS', 'TF', 'WH', 'WR', 'WS', 'WT', 'S', 'FU'
+]
 DATA_CORRUPTED_LIST = [pd.to_datetime('2010-12-20')]
 
 NORMAL_CONTRACT_INFO = [

@@ -14,7 +14,7 @@ pd.set_option('expand_frame_repr', False)
 def updown_factor_cal():
     cal_factor = UpDownFactor(
         factor_name='moment',
-        begin_date='2018-01-01',
+        begin_date='2010-01-04',
         end_date='2021-02-28',
         init_cash=1000000,
         contract_list=NORMAL_CONTRACT_INFO,

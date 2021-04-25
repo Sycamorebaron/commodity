@@ -643,13 +643,14 @@ class BasisFactor(FactorTest):
 
         today_main = _main_data.loc[_main_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        )].copy().reset_index(drop=True)
         today_sec_main = _sec_data.loc[_sec_data['datetime'].apply(
             lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        )].copy().reset_index(drop=True)
 
         today_main['sec'] = today_sec_main['close']
         today_main['basis'] = today_main['sec'] / today_main['close'] - 1
+
         basis_rv = today_main['basis'].std(ddof=1)
         basis = today_main['basis'].iloc[-1]
         open_basis = today_main['basis'][:6].mean()

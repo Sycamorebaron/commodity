@@ -5,15 +5,24 @@ from matplotlib import pyplot as plt
 pd.set_option('expand_frame_repr', False)
 
 factor_list = []
-for roots, dirs, files in os.walk(r'C:\futures_factor_1T'):
+for roots, dirs, files in os.walk(r'C:\futures_factor'):
     if files:
          factor_list = [i.split('.')[0] for i in files]
 
 rtn_data_path = r'D:\commodity\data\output'
-factor_data_path = r'C:\futures_factor_1T'
-factor = 'rtn_skew'
+factor_data_path = r'C:\futures_factor'
+fig_data_path = r'D:\commodity\data\factor_cs_ic'
+
+local_fig_list = []
+for roots, dirs, files in os.walk(fig_data_path):
+    if files:
+        local_fig_list = [i.split('.')[0] for i in files]
+
 rtn = 'f5_rtn'
 for factor in factor_list:
+    if factor in local_fig_list + ['daily_rtn', 'f2_rtn', 'f3_rtn', 'f5_rtn']:
+        print(factor, 'pass')
+        continue
     factor_data = pd.read_excel(os.path.join(factor_data_path, '%s.xlsx' % factor))
     factor_data = factor_data[factor_data.columns[1:]]
     rtn_data = pd.read_excel(os.path.join(rtn_data_path, '%s.xlsx' % rtn))
