@@ -143,12 +143,15 @@ class Contract:
         :return:
         """
         # now_date = pd.to_datetime(now_date)
-
+        now_contract = now_date.strftime('%Y%m')[2:]
         try:
+
             volume_data = self.contract_volume.loc[self.contract_volume['datetime'] == now_date].dropna(axis=1)
 
             volume_data = volume_data[volume_data.columns[2:]].T.reset_index()
+            volume_data = volume_data.loc[volume_data['index'].apply(lambda x: not x.endswith(now_contract))]
             volume_data.sort_values(by=volume_data.columns[1], inplace=True, ascending=False)
+
             return volume_data['index'].iloc[0]
         except Exception as e:
             print('============')
@@ -164,9 +167,11 @@ class Contract:
         :return:
         """
         # now_date = pd.to_datetime(now_date)
+        now_contract = now_date.strftime('%Y%m')[2:]
         try:
             volume_data = self.contract_volume.loc[self.contract_volume['datetime'] == now_date].dropna(axis=1)
             volume_data = volume_data[volume_data.columns[2:]].T.reset_index()
+            volume_data = volume_data.loc[volume_data['index'].apply(lambda x: not x.endswith(now_contract))]
 
             volume_data.sort_values(by=volume_data.columns[1], inplace=True, ascending=False)
             return volume_data['index'].iloc[1]

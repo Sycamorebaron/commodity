@@ -24,7 +24,6 @@ class LongRtnLocalDaily(FactorTest):
             {
                 'open': 'first',
                 'close': 'last',
-
             }
         )
         data.dropna(how='any', inplace=True)
@@ -80,4 +79,3 @@ if __name__ == '__main__':
     l_f2_df.to_excel(os.path.join(OUTPUT_DATA_PATH, 'f2_rtn.xlsx'))
     l_f3_df.to_excel(os.path.join(OUTPUT_DATA_PATH, 'f3_rtn.xlsx'))
     l_f5_df.to_excel(os.path.join(OUTPUT_DATA_PATH, 'f5_rtn.xlsx'))
-
