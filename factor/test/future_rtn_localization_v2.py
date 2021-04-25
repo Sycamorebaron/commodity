@@ -2,6 +2,7 @@ from factor.test.factor_test import FactorTest
 from utils.base_para import *
 from dateutil.relativedelta import relativedelta
 import pandas as pd
+import numpy as np
 
 pd.set_option('expand_frame_repr', False)
 
@@ -32,12 +33,22 @@ class LongRtnLocalDaily(FactorTest):
         )
         data.dropna(how='any', inplace=True)
         print(data)
-        f3_high = (data['high'].rolling(3).max() / data['close'].shift(3) - 1).iloc[4]
-        f3_low = (data['low'].rolling(3).max() / data['close'].shift(3) - 1).iloc[4]
-        f5_high = (data['high'].rolling(5).max() / data['close'].shift(5) - 1).iloc[6]
-        f5_low = (data['low'].rolling(5).max() / data['close'].shift(5) - 1).iloc[6]
-
-        data['f3_high'] = data['high'].rolling(3).max() / data['close'].shift(3) - 1
+        try:
+            f3_high = (data['high'].rolling(3).max() / data['close'].shift(3) - 1).iloc[4]
+        except Exception as e:
+            f3_high = np.nan
+        try:
+            f3_low = (data['low'].rolling(3).max() / data['close'].shift(3) - 1).iloc[4]
+        except Exception as e:
+            f3_low = np.nan
+        try:
+            f5_high = (data['high'].rolling(5).max() / data['close'].shift(5) - 1).iloc[6]
+        except Exception as e:
+            f5_high = np.nan
+        try:
+            f5_low = (data['low'].rolling(5).max() / data['close'].shift(5) - 1).iloc[6]
+        except Exception as e:
+            f5_low = np.nan
 
         return f3_high, f3_low, f5_high, f5_low
 

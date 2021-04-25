@@ -559,7 +559,7 @@ class MoneyFlow(FactorTest):
         today_data.loc[up_cond, '_close'] = today_data['close']
         today_data.loc[down_cond, '_close'] = -today_data['close']
         money_flow = (today_data['_close'] * today_data['volume']).sum() / \
-                     (today_data['close'] * today_data['volume']).sum()
+                     (today_data['close'] * today_data['volume']).sum() if today_data['volume'].sum() != 0 else 0
 
         return money_flow
 
@@ -1238,8 +1238,8 @@ class Others(FactorTest):
         cvar = today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'rtn'].mean()
         today_data['v_rtn'] = today_data['rtn'] * today_data['volume']
         vcvar = today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'v_rtn'].sum() / \
-                today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'volume'].sum()
+                today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'volume'].sum() if today_data.loc[today_data['rtn'] <= today_data['rtn'].quantile(0.05), 'volume'].sum() != 0 else 0
 
         today_data['move'] = today_data['close'] - today_data['open']
-        vwap_move_pct = (today_data['move'] * today_data['volume']).sum() / today_data['volume'].sum()
+        vwap_move_pct = (today_data['move'] * today_data['volume']).sum() / today_data['volume'].sum() if today_data['volume'].sum() != 0 else 0
         return smart_money_vol_pct, cvar, vcvar, vwap_move_pct
