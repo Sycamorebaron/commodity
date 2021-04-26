@@ -10,8 +10,15 @@ from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path_5T, OUTPUT_DAT
 
 pd.set_option('expand_frame_repr', False)
 
+
+class _RtnMoment(RtnMoment):
+    def trunc_data(self, _data):
+        return RtnMoment._trunc_data(self, _data)
+
+
 def rtn_moment_cal(begin_date='2010-01-04', end_date='2021-02-28'):
-    cal_factor = RtnMoment(
+
+    cal_factor = _RtnMoment(
         factor_name='moment',
         begin_date=begin_date,
         end_date=end_date,
