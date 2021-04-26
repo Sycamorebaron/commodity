@@ -27,10 +27,10 @@ if __name__ == '__main__':
 
     pool = Pool(processes=4)
 
-    pool.apply_async(money_flow_cal,)
-    pool.apply_async(others_factor_cal, )
-    pool.apply_async(pca_factor_cal, )
-    pool.apply_async(rtn_factor_cal, )
+    pool.apply_async(updown_factor_cal, ('2011-01-04', '2021-02-28'))
+    pool.apply_async(vol_amt_split_cal, ('2011-01-04', '2021-02-28'))
+    pool.apply_async(vol_price_cal, ('2013-01-04', '2021-02-28'))
+
 
     pool.close()
     pool.join()

@@ -3,6 +3,7 @@ from utils.base_para import *
 import pandas as pd
 from sklearn.decomposition import PCA
 import numpy as np
+from dateutil.relativedelta import relativedelta
 import statsmodels.api as sm
 
 pd.set_option('expand_frame_repr', False)
@@ -11,6 +12,21 @@ pd.set_option('expand_frame_repr', False)
 class FactorTest(MainTest):
     def _daily_process(self):
         pass
+
+    def trunc_data(self, _data):
+        today_data = _data.loc[_data['datetime'].apply(
+            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        )].copy()
+        return today_data
+
+    def _trunc_data(self, _data):
+
+        cond1 = _data['datetime'] >= self.agent.earth_calender.now_date - relativedelta(days=4)
+        cond2 = _data['datetime'] < self.agent.earth_calender.now_date + relativedelta(days=1)
+        today_data = _data.loc[cond1 & cond2].copy()
+        today_data.reset_index(drop=True, inplace=True)
+
+        return today_data
 
     def test(self):
         while not self.agent.earth_calender.end_of_test():
@@ -80,9 +96,7 @@ class RtnMoment(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data['rtn'] = today_data['close'] / today_data['open'] - 1
         return today_data['rtn'].mean(), today_data['rtn'].std(ddof=1), today_data['rtn'].skew(), today_data['rtn'].kurtosis()
@@ -166,9 +180,9 @@ class RtnFactor(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
+
+        # use only day data
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
 
         today_data = today_data.resample(on='datetime', rule='5T').agg(
@@ -244,9 +258,7 @@ class MomentumFactor(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -396,10 +408,9 @@ class VolAmtSplit(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
+        # use only day data
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
 
@@ -496,9 +507,7 @@ class VolPrice(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data['rtn'] = today_data['close'] / today_data['close'].shift(1) - 1
         today_data['dvol'] = today_data['volume'] / today_data['volume'].shift(1) - 1
@@ -549,9 +558,7 @@ class MoneyFlow(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         up_cond = today_data['close'] > today_data['open']
         down_cond = today_data['close'] < today_data['open']
@@ -641,12 +648,8 @@ class BasisFactor(FactorTest):
         _main_data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         _sec_data = self.exchange.contract_dict[comm].data_dict[now_sec_main_contract]
 
-        today_main = _main_data.loc[_main_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy().reset_index(drop=True)
-        today_sec_main = _sec_data.loc[_sec_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy().reset_index(drop=True)
+        today_main = self.trunc_data(_main_data).reset_index(drop=True)
+        today_sec_main = self.trunc_data(_sec_data).reset_index(drop=True)
 
         today_main['sec'] = today_sec_main['close']
         today_main['basis'] = today_main['sec'] / today_main['close'] - 1
@@ -757,9 +760,8 @@ class PCAFactor(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _main_data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _main_data.loc[_main_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_main_data)
+
         data = today_data[['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']].copy()
         for col in ['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']:
             data[col] = (data[col] - data[col].mean()) / data[col].std(ddof=1) if data[col].std(ddof=1) != 0 else 0
@@ -854,9 +856,7 @@ class UpDownFactor(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -964,9 +964,7 @@ class BigFactor(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -1052,9 +1050,7 @@ class Liquidity(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -1136,9 +1132,7 @@ class SingularVol(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)
@@ -1162,7 +1156,6 @@ class Others(FactorTest):
         self.CVaR = []
         self.VCVaR = []
         self.vwap_move_pct = []
-
 
     def _daily_process(self):
         print(self.agent.earth_calender.now_date)
@@ -1220,9 +1213,7 @@ class Others(FactorTest):
             now_date=self.agent.earth_calender.now_date
         )
         _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = self.trunc_data(_data)
 
         today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) <= 15)]
         today_data.reset_index(inplace=True)

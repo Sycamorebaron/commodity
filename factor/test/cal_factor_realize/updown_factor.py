@@ -11,11 +11,11 @@ from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path, OUTPUT_DATA_P
 pd.set_option('expand_frame_repr', False)
 
 
-def updown_factor_cal():
+def updown_factor_cal(begin_date='2010-01-04', end_date='2021-02-28'):
     cal_factor = UpDownFactor(
         factor_name='moment',
-        begin_date='2010-01-04',
-        end_date='2021-02-28',
+        begin_date=begin_date,
+        end_date=end_date,
         init_cash=1000000,
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
