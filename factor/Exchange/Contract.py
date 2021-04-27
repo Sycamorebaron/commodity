@@ -147,15 +147,15 @@ class Contract:
         try:
 
             volume_data = self.contract_volume.loc[self.contract_volume['datetime'] == now_date].dropna(axis=1)
-
             volume_data = volume_data[volume_data.columns[2:]].T.reset_index()
             volume_data = volume_data.loc[volume_data['index'].apply(lambda x: not x.endswith(now_contract))]
             volume_data.sort_values(by=volume_data.columns[1], inplace=True, ascending=False)
 
             return volume_data['index'].iloc[0]
         except Exception as e:
+
             print('============')
-            print(self.commodity)
+            print(self.commodity, 'main')
             print(now_date)
             print('============')
             return self.operate_contract
@@ -177,7 +177,7 @@ class Contract:
             return volume_data['index'].iloc[1]
         except Exception as e:
             print('============')
-            print(self.commodity)
+            print(self.commodity, 'sec')
             print(now_date)
             print('============')
             return self.sec_operate_contract
@@ -253,6 +253,8 @@ class Contract:
         now_sec_main_contract = self.now_sec_main_contract(now_date=now_date)
 
         for contract in [now_main_contract, now_sec_main_contract]:
+            if contract == '':
+                continue
             if contract not in self.data_dict.keys():
                 self.data_dict[contract] = self.data_fetcher.get_contract_data(contract=contract)
 

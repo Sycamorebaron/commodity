@@ -40,16 +40,14 @@ from factor.test.cal_factor_realize.vol_amt_split import _vol_amt_split_cal
 from factor.test.cal_factor_realize.vol_price import _vol_price_cal
 
 
-
 if __name__ == '__main__':
 
     pool = Pool(processes=4)
 
-    pool.apply_async(_basis_cal, ('2011-01-04', '2021-02-28'))
-    pool.apply_async(_big_factor_cal, ('2011-01-04', '2021-02-28'))
-    pool.apply_async(_liquidity_cal, ('2011-01-04', '2021-02-28'))
-    pool.apply_async(_momentum_cal, ('2011-01-04', '2021-02-28'))
-
+    pool.apply_async(_basis_cal, ('2011-01-01', '2021-02-28'))
+    # pool.apply_async(_updown_factor_cal, ('2011-01-04', '2021-02-28'))
+    # pool.apply_async(_vol_amt_split_cal, ('2011-01-04', '2021-02-28'))
+    # pool.apply_async(_vol_price_cal, ('2011-01-04', '2021-02-28'))
 
     pool.close()
     pool.join()

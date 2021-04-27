@@ -645,6 +645,10 @@ class BasisFactor(FactorTest):
         now_sec_main_contract = self.exchange.contract_dict[comm].now_sec_main_contract(
             now_date=self.agent.earth_calender.now_date
         )
+
+        if (now_sec_main_contract == '') or  (now_main_contract == ''):
+            return np.nan, np.nan, np.nan, np.nan, np.nan
+
         _main_data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         _sec_data = self.exchange.contract_dict[comm].data_dict[now_sec_main_contract]
 
