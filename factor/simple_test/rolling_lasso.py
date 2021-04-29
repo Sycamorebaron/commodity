@@ -6,20 +6,19 @@ import statsmodels.api as sm
 from sklearn.ensemble import RandomForestRegressor
 from utils.base_para import *
 pd.set_option('expand_frame_repr', False)
-pd.set_option('display.max_rows', 2000)
+pd.set_option('display.max_rows', 200   )
 
 def form_factor_data():
     data_dict = {}
     print('FORM FACTOR...')
     factor_list = []
-    for roots, dirs, files in os.walk(local_factor_data_path):
+    for roots, dirs, files in os.walk(temp_factor_path):
         if files:
             factor_list = files
 
-
     for f in factor_list:
         print(f)
-        data = pd.read_excel(os.path.join(local_factor_data_path, f))
+        data = pd.read_excel(os.path.join(temp_factor_path, f))
         data_dict[f.split('.')[0]] = data
 
     return data_dict
@@ -47,7 +46,7 @@ if __name__ == '__main__':
     abort_factor = ['long_member_top10', 'long_member_top20', 'short_member_top10', 'short_member_top20']
     factor_data_dict = form_factor_data()
 
-    rtn_data = pd.read_excel(os.path.join(OUTPUT_DATA_PATH, '%s.xlsx' % rtn))
+    rtn_data = pd.read_excel(os.path.join(F_RTN_DATA_PATH, '%s.xlsx' % rtn))
     for comm_info in NORMAL_CONTRACT_INFO[4:]:
         comm = comm_info['id']
         print(comm)
@@ -56,16 +55,18 @@ if __name__ == '__main__':
         comm_rtn_data = rtn_data[['date', comm]].copy()
         comm_rtn_data.columns = ['date', rtn]
         comm_factor_data = form_comm_factor_data(comm=comm, factor_data_dict=factor_data_dict)
+
         for abort in abort_factor:
             if abort in comm_factor_data.columns:
                 comm_factor_data.drop(labels=[abort], axis=1, inplace=True)
 
         comm_data = comm_rtn_data.merge(comm_factor_data, on='date', how='outer')
-        comm_data.dropna(subset=[rtn], how='any', inplace=True)
+        comm_data.dropna(how='any', inplace=True)
         comm_data = comm_data[5:]
         comm_data.reset_index(drop=True, inplace=True)
         comm_data.fillna(method='ffill', inplace=True)
 
+        print(comm_data)
 
         fore_res =[]
         for i in range(min_len, len(comm_data)-2):

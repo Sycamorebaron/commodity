@@ -20,8 +20,8 @@ DATA_PATH = os.path.join(ROOT_PATH, 'data')
 INPUT_DATA_PATH = os.path.join(DATA_PATH, 'input')
 OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'output')
 COMM_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'comm_factor')
-
-
+F_RTN_DATA_PATH = os.path.join(DATA_PATH, 'f_rtn')
+HF_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'HFfactor')
 
 eg = create_engine('postgresql://postgres:thomas@localhost:5432/commodity')
 

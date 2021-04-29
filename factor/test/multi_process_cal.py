@@ -16,10 +16,10 @@ from factor.test.cal_factor_realize.momentum import momentum_cal
 # from factor.test.cal_factor_realize.pca_factor import pca_factor_cal
 # from factor.test.cal_factor_realize.rtn_factor import rtn_factor_cal
 
-from factor.test.cal_factor_realize.rtn_moment import rtn_moment_cal
-from factor.test.cal_factor_realize.singular_vol import singular_vol_cal
+# from factor.test.cal_factor_realize.rtn_moment import rtn_moment_cal
+# from factor.test.cal_factor_realize.singular_vol import singular_vol_cal
 from factor.test.cal_factor_realize.updown_factor import updown_factor_cal
-from factor.test.cal_factor_realize.vol_amt_split import vol_amt_split_cal
+# from factor.test.cal_factor_realize.vol_amt_split import vol_amt_split_cal
 
 from factor.test.cal_factor_realize.vol_price import vol_price_cal
 
@@ -39,15 +39,18 @@ from factor.test.cal_factor_realize.vol_price import vol_price_cal
 # from factor.test.cal_factor_realize.vol_amt_split import _vol_amt_split_cal
 # from factor.test.cal_factor_realize.vol_price import _vol_price_cal
 
+# =========1H
+
+
 
 if __name__ == '__main__':
 
     pool = Pool(processes=4)
 
-    pool.apply_async(basis_cal, ('2011-01-01', '2021-02-28'))
+    # pool.apply_async(basis_cal, ('2011-01-01', '2021-02-28'))
     pool.apply_async(big_factor_cal, ('2011-01-04', '2021-02-28'))
     pool.apply_async(liquidity_cal, ('2011-01-04', '2021-02-28'))
-    pool.apply_async(momentum_cal, ('2011-01-04', '2021-02-28'))
+    # pool.apply_async(momentum_cal, ('2011-01-04', '2021-02-28'))
 
     pool.close()
     pool.join()
