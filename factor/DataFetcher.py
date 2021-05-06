@@ -15,7 +15,7 @@ class ExcelDataFetcher:
             'order_book_id', 'datetime', 'open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover'
         ]].copy()
         data['datetime'] = pd.to_datetime(data['datetime'])
-
+        data['date'] = data['datetime'].apply(lambda x: x.strftime('%Y-%m-%d'))
         return data
 
     def get_data(self, dirname, file):

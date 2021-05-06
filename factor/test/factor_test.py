@@ -14,9 +14,11 @@ class FactorTest(MainTest):
         pass
 
     def trunc_data(self, _data):
-        today_data = _data.loc[_data['datetime'].apply(
-            lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
-        )].copy()
+        today_data = _data.loc[_data['date'] == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')].copy()
+        
+        # today_data = _data.loc[_data['datetime'].apply(
+        #     lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
+        # )].copy()
         return today_data
 
     def _trunc_data(self, _data):
