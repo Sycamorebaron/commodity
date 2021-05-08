@@ -15,7 +15,7 @@ class FactorTest(MainTest):
 
     def trunc_data(self, _data):
         today_data = _data.loc[_data['date'] == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')].copy()
-        
+
         # today_data = _data.loc[_data['datetime'].apply(
         #     lambda x: x.strftime('%Y-%m-%d') == self.agent.earth_calender.now_date.strftime('%Y-%m-%d')
         # )].copy()
@@ -37,6 +37,41 @@ class FactorTest(MainTest):
                 self._daily_process()
 
             self.agent.earth_calender.next_day()
+
+
+class CheckMainContract(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.main_contract_vol = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+        tem_main_vol = {'date': self.agent.earth_calender.now_date}
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+            tem_main_vol[comm] = self.t_factor(comm)
+
+        self.main_contract_vol.append(tem_main_vol)
+
+    def t_factor(self, comm):
+
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+        today_data = self.trunc_data(_data)
+        return today_data['volume'].sum()
 
 
 class RtnMoment(FactorTest):

@@ -48,8 +48,8 @@ if __name__ == '__main__':
     pool = Pool(processes=4)
 
     # pool.apply_async(basis_cal, ('2011-01-01', '2021-02-28'))
-    pool.apply_async(big_factor_cal, ('2011-01-04', '2021-02-28'))
-    pool.apply_async(liquidity_cal, ('2011-01-04', '2021-02-28'))
+    # pool.apply_async(big_factor_cal, ('2011-01-04', '2021-02-28'))
+    # pool.apply_async(liquidity_cal, ('2011-01-04', '2021-02-28'))
     # pool.apply_async(momentum_cal, ('2011-01-04', '2021-02-28'))
 
     pool.close()
