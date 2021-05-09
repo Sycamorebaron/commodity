@@ -33,7 +33,7 @@ class HFFactor(FactorTest):
 
 class HFRtn(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.rtn_30t = []
 
     def _daily_process(self):
@@ -82,7 +82,7 @@ class HFRtn(HFFactor):
 
 class HFRtnMoment(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.factor_name = factor_name
         self.mean = []
         self.std = []
@@ -163,7 +163,7 @@ class HFRtnMoment(HFFactor):
 
 class HFUpDownFactor(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.up_rtn_mean = []
         self.up_rtn_std = []
         self.up_move_vol_pct = []
@@ -302,7 +302,7 @@ class HFUpDownFactor(HFFactor):
 
 class HFVolPrice(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.dvol_rtn_corr = []
         self.doi_rtn_corr = []
         self.dvol_doi_corr = []
@@ -394,7 +394,7 @@ class HFVolPrice(HFFactor):
 
 class HFPCAFactor(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.d_first_com = []
         self.d_sec_com = []
         self.first_com_range = []
@@ -517,7 +517,7 @@ class HFPCAFactor(HFFactor):
 
 class HFBigFactor(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
         self.vbig_rtn_mean = []
         self.vbig_rtn_vol = []
         self.vbig_rv_corr = []
@@ -624,6 +624,201 @@ class HFBigFactor(HFFactor):
             'abig_rtn_vol': abig_rtn_vol,
             'abig_ra_corr': abig_ra_corr,
         }
+
+
+class HFLiquidity(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.amihud = []
+        self.roll_spread = []
+        self.LOT = []
+        self.pastor_gamma = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.amihud.append(t_factor_dict['amihud'])
+        self.roll_spread.append(t_factor_dict['roll_spread'])
+        self.LOT.append(t_factor_dict['LOT'])
+        self.pastor_gamma.append(t_factor_dict['pastor_gamma'])
+
+    def t_daily_factor(self, open_comm_list) -> dict:
+
+        _factor_dict = {
+            'amihud': pd.DataFrame(),
+            'roll_spread': pd.DataFrame(),
+            'LOT': pd.DataFrame(),
+            'pastor_gamma': pd.DataFrame()
+        }
+
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            if len(today_data):
+                # 半小时分隔
+                today_data['label'] = today_data['datetime'].apply(
+                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
+                )
+                today_data['label'].fillna(method='ffill', inplace=True)
+
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+                today_data['amt'] = today_data['close'] * today_data['volume']
+
+                res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
+
+                res['amihud'] = res[0].apply(lambda x: x['amihud'])
+                res['roll_spread'] = res[0].apply(lambda x: x['roll_spread'])
+                res['LOT'] = res[0].apply(lambda x: x['LOT'])
+                res['pastor_gamma'] = res[0].apply(lambda x: x['pastor_gamma'])
+
+                res['datetime'] = res.index
+
+                for factor in _factor_dict.keys():
+
+                    if len(_factor_dict[factor]):
+                        _factor_dict[factor] = _factor_dict[factor].merge(
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+                        )
+                    else:
+                        _factor_dict[factor] = \
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+        return _factor_dict
+
+    def _cal(self, x):
+        amihud = abs(x['close'].iloc[-1] / x['open'].iloc[0] - 1) / x['amt'].sum()
+        LOT = len(x.loc[x['open'] == x['close']]) / len(x)
+
+        x['dp'] = x['close'] - x['close'].shift(1)
+        x['dp_1'] = x['dp'].shift(1)
+        _d = x[1:].copy()
+        cov = _d['dp'].cov(_d['dp_1'])
+        roll_spread = -2 * np.sqrt(-cov) if cov < 0 else 0
+
+        x['rtn'] = x['close'] / x['open'] - 1
+        x['x'] = (x['rtn'].apply(lambda x : 1 if x >= 0 else -1) * x['volume']).shift(1)
+        x = x[1:]['x'].copy()
+        y = x[1:]['rtn'].copy()
+        model = sm.OLS(endog=y, exog=x)
+        res = model.fit()
+        pastor_gamma = dict(res.params)['x']
+
+        return {
+            'amihud': amihud,
+            'roll_spread': roll_spread,
+            'LOT': LOT,
+            'pastor_gamma': pastor_gamma,
+        }
+
+
+class HFSingularFactor(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.BV = []
+        self.BV_sigma = []
+        self.bollerslev_RSJ =[]
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.BV.append(t_factor_dict['amihud'])
+        self.BV_sigma.append(t_factor_dict['roll_spread'])
+        self.bollerslev_RSJ.append(t_factor_dict['LOT'])
+
+    def t_daily_factor(self, open_comm_list) -> dict:
+
+        _factor_dict = {
+            'BV': pd.DataFrame(),
+            'BV_sigma': pd.DataFrame(),
+            'bollerslev_RSJ': pd.DataFrame()
+        }
+
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            if len(today_data):
+                # 半小时分隔
+                today_data['label'] = today_data['datetime'].apply(
+                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
+                )
+                today_data['label'].fillna(method='ffill', inplace=True)
+
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+                today_data['lrtn'] = today_data['close'].apply(lambda x: np.log(x)) - \
+                                     today_data['open'].apply(lambda x: np.log(x))
+
+                res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
+
+                res['BV'] = res[0].apply(lambda x: x['BV'])
+                res['BV_sigma'] = res[0].apply(lambda x: x['BV_sigma'])
+                res['bollerslev_RSJ'] = res[0].apply(lambda x: x['bollerslev_RSJ'])
+
+                res['datetime'] = res.index
+
+                for factor in _factor_dict.keys():
+
+                    if len(_factor_dict[factor]):
+                        _factor_dict[factor] = _factor_dict[factor].merge(
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+                        )
+                    else:
+                        _factor_dict[factor] = \
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+        return _factor_dict
+
+    def _cal(self, x):
+        BV = (x['lrtn'].abs() * x['lrtn'].shift(1)).sum() / (len(x) - 2)
+        BV_sigma = np.sqrt(BV) if BV > 0 else 0
+        bollerslev_RSJ = \
+            (x.loc[x['rtn'] > 0, 'rtn'].std(ddof=1) -
+             x.loc[x['rtn'] < 0, 'rtn'].std(ddof=1)) / x['rtn'].std(ddof=1) if \
+                x['rtn'].std(ddof=1) > 0 else 0
+
+        return {
+            'BV': BV,
+            'BV_sigma': BV_sigma,
+            'bollerslev_RSJ': bollerslev_RSJ
+        }
+
 
 
 if __name__ == '__main__':
