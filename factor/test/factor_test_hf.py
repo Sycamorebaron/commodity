@@ -30,6 +30,17 @@ class HFFactor(FactorTest):
 
         return data
 
+    @staticmethod
+    def add_label(data):
+        data['label'] = data['datetime'].apply(
+            lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
+            # lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '16', '31', '46']) else None
+
+        )
+        data['label'].fillna(method='ffill', inplace=True)
+        return data
+
+
 
 class HFRtn(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
@@ -138,8 +149,7 @@ class HFRtnMoment(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
-                today_data['label'] = today_data['datetime'].apply(lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None)
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
                 res['mean'] = res[0].apply(lambda x: x['mean'])
@@ -265,11 +275,7 @@ class HFUpDownFactor(HFFactor):
             if len(today_data):
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
                 today_data['move'] = today_data['close'] - today_data['open']
-                today_data['label'] = today_data['datetime'].apply(
-                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-                )
-
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
 
@@ -347,14 +353,12 @@ class HFVolPrice(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 # 半小时分隔
-                today_data['label'] = today_data['datetime'].apply(
-                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-                )
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
                 today_data['dvol'] = today_data['volume'] - today_data['volume'].shift(1)
                 today_data['doi'] = today_data['open_interest'] - today_data['open_interest'].shift(1)
+
 
                 res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
 
@@ -363,7 +367,6 @@ class HFVolPrice(HFFactor):
                 res['dvol_doi_corr'] = res[0].apply(lambda x: x['dvol_doi_corr'])
 
                 res['datetime'] = res.index
-
                 for factor in _factor_dict.keys():
 
                     if len(_factor_dict[factor]):
@@ -378,7 +381,6 @@ class HFVolPrice(HFFactor):
 
     def _cal(self, x):
 
-        x.dropna(subset=['rtn', 'dvol', 'doi'], how='any', inplace=True)
         if len(x):
             dvol_rtn_corr, doi_rtn_corr, dvol_doi_corr = \
                 x['dvol'].corr(x['rtn']), x['doi'].corr(x['rtn']), x['dvol'].corr(x['doi'])
@@ -433,6 +435,7 @@ class HFPCAFactor(HFFactor):
         self.first_explained_ratio.append(t_factor_dict['first_explained_ratio'])
         self.sec_explained_ratio.append(t_factor_dict['sec_explained_ratio'])
 
+
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
@@ -447,6 +450,7 @@ class HFPCAFactor(HFFactor):
         }
 
         for comm in open_comm_list:
+
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
                 now_date=self.agent.earth_calender.now_date
             )
@@ -454,10 +458,7 @@ class HFPCAFactor(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 # 半小时分隔
-                today_data['label'] = today_data['datetime'].apply(
-                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-                )
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
 
@@ -489,6 +490,19 @@ class HFPCAFactor(HFFactor):
         data = x[['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']].copy()
         for col in ['open', 'high', 'low', 'close', 'volume', 'open_interest', 'total_turnover']:
             data[col] = (data[col] - data[col].mean()) / data[col].std(ddof=1) if data[col].std(ddof=1) != 0 else 0
+
+        if x['volume'].sum() == 0:
+            print(x)
+            return {
+                'd_first_com': 0,
+                'd_sec_com': 0,
+                'first_com_range': 0,
+                'sec_com_range': 0,
+                'd_first_com_std': 0,
+                'd_sec_com_std': 0,
+                'first_explained_ratio': 0,
+                'sec_explained_ratio': 0
+            }
 
         pca = PCA(n_components=3)
         new_x = pca.fit_transform(data)
@@ -573,10 +587,7 @@ class HFBigFactor(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 # 半小时分隔
-                today_data['label'] = today_data['datetime'].apply(
-                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-                )
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
                 today_data['amt'] = today_data['close'] * today_data['volume']
@@ -604,16 +615,16 @@ class HFBigFactor(HFFactor):
         return _factor_dict
 
     def _cal(self, x):
-        vbig_cond = x['volume'] > x['volume'].quantile(0.5)
-        abig_cond = x['amt'] > x['amt'].quantile(0.5)
+        vbig_cond = x['volume'] >= x['volume'].quantile(0.5)
+        abig_cond = x['amt'] >= x['amt'].quantile(0.5)
 
-        vbig_rtn_mean = x.loc[vbig_cond, 'rtn'].mean() if len(x.loc[vbig_cond]) else 0
-        vbig_rtn_vol = x.loc[vbig_cond, 'rtn'].std(ddof=1) if len(x.loc[vbig_cond]) else 0
-        vbig_rv_corr = x.loc[vbig_cond, ['rtn', 'volume']].corr().iloc[0, 1] if len(x.loc[vbig_cond]) else 0
+        vbig_rtn_mean = x.loc[vbig_cond, 'rtn'].mean() if len(x.loc[vbig_cond]) else None
+        vbig_rtn_vol = x.loc[vbig_cond, 'rtn'].std(ddof=1) if len(x.loc[vbig_cond]) else None
+        vbig_rv_corr = x.loc[vbig_cond, ['rtn', 'volume']].corr().iloc[0, 1] if len(x.loc[vbig_cond]) else None
 
-        abig_rtn_mean = x.loc[abig_cond, 'rtn'].mean() if len(x.loc[abig_cond]) else 0
-        abig_rtn_vol = x.loc[abig_cond, 'rtn'].std(ddof=1) if len(x.loc[abig_cond]) else 0
-        abig_ra_corr = x.loc[abig_cond, ['rtn', 'amt']].corr().iloc[0, 1] if len(x.loc[abig_cond]) else 0
+        abig_rtn_mean = x.loc[abig_cond, 'rtn'].mean() if len(x.loc[abig_cond]) else None
+        abig_rtn_vol = x.loc[abig_cond, 'rtn'].std(ddof=1) if len(x.loc[abig_cond]) else None
+        abig_ra_corr = x.loc[abig_cond, ['rtn', 'amt']].corr().iloc[0, 1] if len(x.loc[abig_cond]) else None
 
 
         return {
@@ -676,10 +687,7 @@ class HFLiquidity(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 # 半小时分隔
-                today_data['label'] = today_data['datetime'].apply(
-                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-                )
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
                 today_data['amt'] = today_data['close'] * today_data['volume']
@@ -777,10 +785,7 @@ class HFSingularFactor(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 # 半小时分隔
-                today_data['label'] = today_data['datetime'].apply(
-                    lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-                )
-                today_data['label'].fillna(method='ffill', inplace=True)
+                today_data = self.add_label(data=today_data)
 
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
                 today_data['lrtn'] = today_data['close'].apply(lambda x: np.log(x)) - \
@@ -807,7 +812,7 @@ class HFSingularFactor(HFFactor):
 
     def _cal(self, x):
         BV = (x['lrtn'].abs() * x['lrtn'].shift(1)).sum() / (len(x) - 2)
-        BV_sigma = np.sqrt(BV) if BV > 0 else 0
+        BV_sigma = np.sqrt(BV) if BV > 0 else None
         bollerslev_RSJ = \
             (x.loc[x['rtn'] > 0, 'rtn'].std(ddof=1) -
              x.loc[x['rtn'] < 0, 'rtn'].std(ddof=1)) / x['rtn'].std(ddof=1) if \

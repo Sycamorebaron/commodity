@@ -7,10 +7,12 @@ if system.startswith('win'):
     local_data_path = r'C:\futures_data'
     local_data_path_5T = r'C:\futures_data_5T'
     local_factor_data_path = r'C:\futures_factor'
+    local_hf_factor_path = r'C:\30t_factor'
 elif system.startswith('linux'):
     local_data_path = r'/home/sycamore/futures_data'
     local_data_path_5T = r'/home/sycamore/futures_data_5T'
     local_factor_data_path = r'/home/sycamore/futures_factor_1T'
+    local_hf_factor_path = r'/home/sycamore/30t_factor'
 else:
     local_data_path = ''
 
@@ -20,6 +22,7 @@ DATA_PATH = os.path.join(ROOT_PATH, 'data')
 INPUT_DATA_PATH = os.path.join(DATA_PATH, 'input')
 OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'output')
 COMM_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'comm_factor')
+HF_COMM_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'hf_comm_factor')
 F_RTN_DATA_PATH = os.path.join(DATA_PATH, 'f_rtn')
 HF_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'HFfactor')
 

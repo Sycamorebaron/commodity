@@ -16,6 +16,7 @@ def hf_big_factor(begin_date='2010-01-04', end_date='2021-02-28'):
         begin_date=begin_date,
         end_date=end_date,
         init_cash=1000000,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'SA'],
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
     )
@@ -43,5 +44,5 @@ def hf_big_factor(begin_date='2010-01-04', end_date='2021-02-28'):
 
 
 if __name__ == '__main__':
-    hf_big_factor('2011-01-01', '2011-03-01')
+    hf_big_factor('2019-12-06', '2020-03-01')
 
