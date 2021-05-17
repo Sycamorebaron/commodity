@@ -930,6 +930,148 @@ class HFSimplePriceVolumeFactor(HFFactor):
             'd_oi': d_oi,
         }
 
+class HFPVCorrFactor(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.P1V0 = []
+        self.P2V0 = []
+        self.P3V0 = []
+        self.P0V1 = []
+        self.P0V2 = []
+        self.P0V3 = []
+
+        self.R1DV0 = []
+        self.R2DV0 = []
+        self.R3DV0 = []
+        self.R0DV1 = []
+        self.R0DV2 = []
+        self.R0DV3 = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.P1V0.append(t_factor_dict['P1V0'])
+        self.P2V0.append(t_factor_dict['P2V0'])
+        self.P3V0.append(t_factor_dict['P3V0'])
+        self.P0V1.append(t_factor_dict['P0V1'])
+        self.P0V2.append(t_factor_dict['P0V2'])
+        self.P0V3.append(t_factor_dict['P0V3'])
+
+        self.R1DV0.append(t_factor_dict['R1DV0'])
+        self.R2DV0.append(t_factor_dict['R2DV0'])
+        self.R3DV0.append(t_factor_dict['R3DV0'])
+        self.R0DV1.append(t_factor_dict['R0DV1'])
+        self.R0DV2.append(t_factor_dict['R0DV2'])
+        self.R0DV3.append(t_factor_dict['R0DV3'])
+
+    def t_daily_factor(self, open_comm_list) -> dict:
+
+        _factor_dict = {
+            'P1V0': pd.DataFrame(),
+            'P2V0': pd.DataFrame(),
+            'P3V0': pd.DataFrame(),
+            'P0V1': pd.DataFrame(),
+            'P0V2': pd.DataFrame(),
+            'P0V3': pd.DataFrame(),
+
+            'R1DV0': pd.DataFrame(),
+            'R2DV0': pd.DataFrame(),
+            'R3DV0': pd.DataFrame(),
+            'R0DV1': pd.DataFrame(),
+            'R0DV2': pd.DataFrame(),
+            'R0DV3': pd.DataFrame(),
+        }
+
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            if len(today_data):
+                # 半小时分隔
+                today_data = self.add_label(data=today_data)
+
+                today_data['rtn'] = today_data['close'] / today_data['close'].shift(1) - 1
+                today_data['dv'] = today_data['volume'] - today_data['volume'].shift(1)
+
+                res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
+
+                res['P1V0'] = res[0].apply(lambda x: x['P1V0'])
+                res['P2V0'] = res[0].apply(lambda x: x['P2V0'])
+                res['P3V0'] = res[0].apply(lambda x: x['P3V0'])
+                res['P0V1'] = res[0].apply(lambda x: x['P0V1'])
+                res['P0V2'] = res[0].apply(lambda x: x['P0V2'])
+                res['P0V3'] = res[0].apply(lambda x: x['P0V3'])
+
+                res['R1DV0'] = res[0].apply(lambda x: x['R1DV0'])
+                res['R2DV0'] = res[0].apply(lambda x: x['R2DV0'])
+                res['R3DV0'] = res[0].apply(lambda x: x['R3DV0'])
+                res['R0DV1'] = res[0].apply(lambda x: x['R0DV1'])
+                res['R0DV2'] = res[0].apply(lambda x: x['R0DV2'])
+                res['R0DV3'] = res[0].apply(lambda x: x['R0DV3'])
+
+                res['datetime'] = res.index
+
+                for factor in _factor_dict.keys():
+
+                    if len(_factor_dict[factor]):
+                        _factor_dict[factor] = _factor_dict[factor].merge(
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+                        )
+                    else:
+                        _factor_dict[factor] = \
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+        return _factor_dict
+
+    def _cal(self, x):
+        P1V0 = x['close'].shift(1).corr(x['volume'])
+        P2V0 = x['close'].shift(2).corr(x['volume'])
+        P3V0 = x['close'].shift(3).corr(x['volume'])
+        P0V1 = x['close'].shift(-1).corr(x['volume'])
+        P0V2 = x['close'].shift(-2).corr(x['volume'])
+        P0V3 = x['close'].shift(-3).corr(x['volume'])
+
+        R1DV0 = x['rtn'].shift(1).corr(x['dv'])
+        R2DV0 = x['rtn'].shift(2).corr(x['dv'])
+        R3DV0 = x['rtn'].shift(3).corr(x['dv'])
+        R0DV1 = x['rtn'].shift(-1).corr(x['dv'])
+        R0DV2 = x['rtn'].shift(-2).corr(x['dv'])
+        R0DV3 = x['rtn'].shift(-3).corr(x['dv'])
+
+        return {
+            'P1V0': P1V0,
+            'P2V0': P2V0,
+            'P3V0': P3V0,
+            'P0V1': P0V1,
+            'P0V2': P0V2,
+            'P0V3': P0V3,
+
+            'R1DV0': R1DV0,
+            'R2DV0': R2DV0,
+            'R3DV0': R3DV0,
+            'R0DV1': R0DV1,
+            'R0DV2': R0DV2,
+            'R0DV3': R0DV3,
+        }
+
 
 if __name__ == '__main__':
     cal_factor = HFRtn(
