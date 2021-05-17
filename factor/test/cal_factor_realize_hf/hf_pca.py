@@ -16,8 +16,8 @@ def hf_pca_price(begin_date='2010-01-04', end_date='2021-02-28'):
         begin_date=begin_date,
         end_date=end_date,
         init_cash=1000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'FG'],
-        # contract_list=NORMAL_CONTRACT_INFO,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'L'],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
     )
     cal_factor.test()
@@ -41,7 +41,7 @@ def hf_pca_price(begin_date='2010-01-04', end_date='2021-02-28'):
 
     d_first_com.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_first_com.csv'))
     d_sec_com.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_sec_com.csv'))
-    first_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactr', 'first_com_range.csv'))
+    first_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'first_com_range.csv'))
     sec_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'sec_com_range.csv'))
     d_first_com_std.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_first_com_std.csv'))
     d_sec_com_std.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_sec_com_std.csv'))
@@ -50,5 +50,5 @@ def hf_pca_price(begin_date='2010-01-04', end_date='2021-02-28'):
 
 
 if __name__ == '__main__':
-    hf_pca_price('2021-02-25', '2021-02-28')
+    hf_pca_price('2011-01-01', '2021-02-28')
 

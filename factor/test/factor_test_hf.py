@@ -425,6 +425,7 @@ class HFPCAFactor(HFFactor):
             open_comm_list.append(comm)
 
         t_factor_dict = self.t_daily_factor(open_comm_list)
+        print(t_factor_dict)
 
         self.d_first_com.append(t_factor_dict['d_first_com'])
         self.d_sec_com.append(t_factor_dict['d_sec_com'])
@@ -824,6 +825,99 @@ class HFSingularFactor(HFFactor):
             'bollerslev_RSJ': bollerslev_RSJ
         }
 
+
+class HFSimplePriceVolumeFactor(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.highest_rtn = []
+        self.lowest_rtn = []
+        self.range_pct = []
+        self.vol_oi = []
+        self.d_oi = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.highest_rtn.append(t_factor_dict['highest_rtn'])
+        self.lowest_rtn.append(t_factor_dict['lowest_rtn'])
+        self.range_pct.append(t_factor_dict['range_pct'])
+        self.vol_oi.append(t_factor_dict['vol_oi'])
+        self.d_oi.append(t_factor_dict['d_oi'])
+
+    def t_daily_factor(self, open_comm_list) -> dict:
+
+        _factor_dict = {
+            'highest_rtn': pd.DataFrame(),
+            'lowest_rtn': pd.DataFrame(),
+            'range_pct': pd.DataFrame(),
+            'vol_oi': pd.DataFrame(),
+            'd_oi': pd.DataFrame(),
+        }
+
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            if len(today_data):
+                # 半小时分隔
+                today_data = self.add_label(data=today_data)
+
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
+                res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
+
+                res['highest_rtn'] = res[0].apply(lambda x: x['highest_rtn'])
+                res['lowest_rtn'] = res[0].apply(lambda x: x['lowest_rtn'])
+                res['range_pct'] = res[0].apply(lambda x: x['range_pct'])
+                res['vol_oi'] = res[0].apply(lambda x: x['vol_oi'])
+                res['d_oi'] = res[0].apply(lambda x: x['d_oi'])
+
+                res['datetime'] = res.index
+
+                for factor in _factor_dict.keys():
+
+                    if len(_factor_dict[factor]):
+                        _factor_dict[factor] = _factor_dict[factor].merge(
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+                        )
+                    else:
+                        _factor_dict[factor] = \
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+        return _factor_dict
+
+    def _cal(self, x):
+        highest_rtn = x['high'].max() / x['open'].iloc[0] - 1
+        lowest_rtn = x['low'].min() / x['open'].iloc[0] - 1
+        range_pct = x['high'].max() / x['low'].min() - 1
+        vol_oi = x['volume'].sum() / x['open_interest'].iloc[0]
+        d_oi = x['open_interest'].iloc[-1] / x['open_interest'].iloc[0] - 1
+
+        return {
+            'highest_rtn': highest_rtn,
+            'lowest_rtn': lowest_rtn,
+            'range_pct': range_pct,
+            'vol_oi': vol_oi,
+            'd_oi': d_oi,
+        }
 
 
 if __name__ == '__main__':
