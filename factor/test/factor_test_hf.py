@@ -505,18 +505,29 @@ class HFPCAFactor(HFFactor):
                 'sec_explained_ratio': 0
             }
 
-        pca = PCA(n_components=3)
-        new_x = pca.fit_transform(data)
-        com_df = pd.DataFrame(new_x)
+        if data['volume'].sum() > 0:
+            pca = PCA(n_components=3)
+            new_x = pca.fit_transform(data)
+            com_df = pd.DataFrame(new_x)
 
-        d_first_com = com_df[0].iloc[-1] - com_df[0].iloc[0]
-        d_sec_com = com_df[1].iloc[-1] - com_df[1].iloc[0]
-        first_com_range = (com_df[0].max() - com_df[0].min())
-        sec_com_range = (com_df[1].max() - com_df[1].min())
-        d_first_com_std = (com_df[0] - com_df[0].shift(1)).std(ddof=1)
-        d_sec_com_std = (com_df[1] - com_df[1].shift(1)).std(ddof=1)
-        first_explained_ratio = pca.explained_variance_ratio_[0]
-        sec_explained_ratio = pca.explained_variance_ratio_[1]
+            d_first_com = com_df[0].iloc[-1] - com_df[0].iloc[0]
+            d_sec_com = com_df[1].iloc[-1] - com_df[1].iloc[0]
+            first_com_range = (com_df[0].max() - com_df[0].min())
+            sec_com_range = (com_df[1].max() - com_df[1].min())
+            d_first_com_std = (com_df[0] - com_df[0].shift(1)).std(ddof=1)
+            d_sec_com_std = (com_df[1] - com_df[1].shift(1)).std(ddof=1)
+            first_explained_ratio = pca.explained_variance_ratio_[0]
+            sec_explained_ratio = pca.explained_variance_ratio_[1]
+
+        else:
+            d_first_com = 0
+            d_sec_com = 0
+            first_com_range = 0
+            sec_com_range = 0
+            d_first_com_std = 0
+            d_sec_com_std = 0
+            first_explained_ratio = 0
+            sec_explained_ratio = 0
 
         return {
             'd_first_com': d_first_com,
@@ -921,12 +932,15 @@ class HFSimplePriceVolumeFactor(HFFactor):
 
 
 if __name__ == '__main__':
-    cal_factor = HFPCAFactor(
+    cal_factor = HFRtn(
         factor_name='moment',
-        begin_date='2020-01-04',
-        end_date='2020-01-10',
+        begin_date='2011-01-01',
+        end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=NORMAL_CONTRACT_INFO[:3],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
     )
     cal_factor.test()
+    rtn = pd.concat(cal_factor.rtn_30t)
+    rtn.reset_index(drop=True, inplace=True)
+    rtn.to_csv(r'/home/sycamore/PycharmProjects/commodity/data/output/HFfactor/rtn_30t.csv')

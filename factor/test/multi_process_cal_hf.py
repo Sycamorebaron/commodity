@@ -20,10 +20,10 @@ if __name__ == '__main__':
 
     pool = Pool(processes=4)
 
-    pool.apply_async(hf_big_factor, ('2011-01-01', '2021-02-28'))
-    pool.apply_async(hf_liquidity_pirce, ('2011-01-01', '2021-02-28'))
     pool.apply_async(hf_pca_price, ('2011-01-01', '2021-02-28'))
-    pool.apply_async(hf_rtn_moment, ('2011-01-01', '2021-02-28'))
+    # pool.apply_async(hf_up_down, ('2011-01-01', '2021-02-28'))
+    pool.apply_async(hf_vol_pirce, ('2011-01-01', '2021-02-28'))
+    # pool.apply_async(hf_rtn_moment, ('2011-01-01', '2021-02-28'))
 
     pool.close()
     pool.join()

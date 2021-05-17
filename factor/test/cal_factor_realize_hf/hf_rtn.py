@@ -25,5 +25,5 @@ def hf_rtn(begin_date='2010-01-04', end_date='2021-02-28'):
     factor.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', '%s.csv' % cal_factor.test_name))
 
 if __name__ == '__main__':
-    hf_rtn('2011-01-01', '2011-03-01')
+    hf_rtn('2011-01-01', '2021-02-28')
 
