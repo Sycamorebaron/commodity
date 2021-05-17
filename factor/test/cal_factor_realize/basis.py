@@ -51,14 +51,18 @@ def _basis_cal(begin_date='2010-01-04', end_date='2021-02-28'):
     cal_factor.test()
 
     l_main_sec_basis = pd.DataFrame(cal_factor.main_sec_basis)
+    l_open_basis = pd.DataFrame(cal_factor.open_basis)
+    l_close_basis = pd.DataFrame(cal_factor.close_basis)
     l_main_sec_basis_rv = pd.DataFrame(cal_factor.main_sec_basis_rv)
     l_mean_basis = pd.DataFrame(cal_factor.mean_basis)
 
     l_main_sec_basis.to_excel(os.path.join(OUTPUT_DATA_PATH, '5D_main_sec_basis.xlsx'))
+    l_open_basis.to_excel(os.path.join(OUTPUT_DATA_PATH, '5D_open_basis.xlsx'))
+    l_close_basis.to_excel(os.path.join(OUTPUT_DATA_PATH, '5D_close_basis.xlsx'))
     l_main_sec_basis_rv.to_excel(os.path.join(OUTPUT_DATA_PATH, '5D_main_sec_basis_rv.xlsx'))
     l_mean_basis.to_excel(os.path.join(OUTPUT_DATA_PATH, '5D_mean_basis.xlsx'))
 
 
 
 if __name__ == '__main__':
-    _basis_cal(begin_date='2013-02-04')
+    basis_cal()
