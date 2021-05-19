@@ -15,7 +15,7 @@ hour_factor = {
     '14:00': 'two',
 }
 
-for roots, dirs, files in os.walk(r'D:\commodity\data\hf_comm_factor'):
+for roots, dirs, files in os.walk(r'E:\commodity\data\output\hf_comm_factor'):
     if files:
         for f in files:
             print(f)
@@ -28,4 +28,5 @@ for roots, dirs, files in os.walk(r'D:\commodity\data\hf_comm_factor'):
                 data[hour_factor[seg]] = 0
                 data.loc[data['datetime'].apply(lambda x: x.strftime('%H:%M') == seg), hour_factor[seg]] = 1
             data = data[data.columns[1:]].copy()
+
             data.to_csv(os.path.join(roots, f))
