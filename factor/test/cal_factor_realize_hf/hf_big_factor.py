@@ -45,4 +45,3 @@ def hf_big_factor(begin_date='2010-01-04', end_date='2021-02-28'):
 
 if __name__ == '__main__':
     hf_big_factor('2019-12-06', '2020-03-01')
-

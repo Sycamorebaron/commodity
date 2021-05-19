@@ -24,7 +24,6 @@ class ExcelDataFetcher:
         return data
 
 
-
     def get_contract_data_list(self, commodity):
         files = []
         for roots, dirs, files in os.walk(os.path.join(self.local_data_path, commodity)):

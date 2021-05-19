@@ -40,6 +40,7 @@ class Agent:
         return trade_info
 
     def contract_move_forward(self, exchange, now_operate_contract, new_operate_contract, now_date):
+        # 移仓换月
         print('CONTRACT MOVE FORWARD', now_operate_contract, new_operate_contract)
         now_holding_num = exchange.account.position.holding_position[now_operate_contract.strip('1234567890')][
             now_operate_contract]['num']
