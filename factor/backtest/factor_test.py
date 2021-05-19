@@ -31,13 +31,21 @@ class BackTest(MainTest):
             self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
 
         # 根据策略计算目标仓位
-        target_pos = {}
+        print(self.exchange.contract_dict['L'].operate_contract)
+        print(self.exchange.contract_dict['FG'].operate_contract)
+
+
+        target_pos = {'L2005': 0.5, 'FG2005': -0.5}
 
         # 根据目标仓位调仓
         trade_info = self.agent.change_position(
             exchange=self.exchange,
             target_pos=target_pos,
+            now_dt='2020-01-02 09:01:00'
         )
+        print(trade_info)
+        exit()
+
         # 记录交易
         self.agent.recorder.record_trade(info=trade_info)
 
@@ -72,10 +80,10 @@ class BackTest(MainTest):
 if __name__ == '__main__':
     back_test = BackTest(
         test_name='moment',
-        begin_date='2011-01-01',
+        begin_date='2020-01-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=NORMAL_CONTRACT_INFO[:5],
+        contract_list=NORMAL_CONTRACT_INFO[:10],
         local_data_path=local_data_path
     )
     back_test.test()

@@ -233,14 +233,16 @@ class Contract:
             if contract not in now_open_contract:
                 self.data_dict.pop(contract)
 
-    def _get_contract_data(self, contract, now_date):
+    def _get_contract_data(self, contract, dt):
         try:
             data = self.data_dict[contract]
         except Exception as e:
             print(e)
             raise Exception('Contract.get_contract_data ERROR: CONTRACT NOT IN DATA DICT')
-        data = data.loc[data['trading_date'] == now_date]
-        return data['close'].iloc[-1]
+
+        price = data.loc[data['datetime'] == pd.to_datetime(dt), 'close'].values[0]
+
+        return price
 
     def renew_main_sec_contract(self, now_date):
         """
