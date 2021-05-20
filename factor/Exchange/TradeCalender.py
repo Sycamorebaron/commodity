@@ -1,4 +1,3 @@
-import pandas as pd
 from utils.base_para import *
 from datetime import timedelta
 import os

@@ -1,4 +1,3 @@
-import pandas as pd
 from factor.DataFetcher import ExcelDataFetcher
 from utils.base_para import *
 

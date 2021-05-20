@@ -16,7 +16,7 @@ class TradeCenter:
         open_margin = \
             exchange.contract_dict[commodity].contract_unit * \
             exchange.contract_dict[commodity].init_margin_rate * price * abs(num)
-        print('OPEN', now_dt, contract, num, price)
+        # print('OPEN', now_dt, contract, num, price)
         exchange.account.cash -= (
                 open_margin + abs(num) * exchange.contract_dict[commodity].open_comm
         )
@@ -43,7 +43,7 @@ class TradeCenter:
         today_profit = \
             (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * num * \
             exchange.contract_dict[commodity].contract_unit
-        print('CLOSE', now_dt, contract, num, price)
+        # print('CLOSE', now_dt, contract, num, price)
         exchange.account.cash += (today_profit + use_margin - abs(num) * exchange.contract_dict[commodity].close_comm)
 
         exchange.account.position.drop(contract=contract)
@@ -118,6 +118,7 @@ class TradeCenter:
         print('trade_center.dec', exchange.account.position.holding_position[commodity][contract], exchange.account.cash)
 
     def trade(self, exchange, target_num, now_dt):
+
         trade_info = []
         for contract in target_num.keys():
             if contract in exchange.account.position.holding_position[contract.strip('1234567890')].keys():

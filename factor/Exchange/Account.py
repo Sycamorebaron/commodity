@@ -1,4 +1,4 @@
-from backtest.Exchange.Position import Position
+from factor.Exchange.Position import Position
 from backtest.Infras.DataFetcher import DataFetcher
 from utils.base_para import *
 
@@ -11,7 +11,7 @@ class Account:
         self.risk_rate = 0
         self.equity = init_cash
 
-    def daily_settlement(self, now_date, contract_dict):
+    def __daily_settlement(self, now_date, contract_dict):
         for commodity in self.position.holding_position:
             pos_dict = self.position.holding_position[commodity]
             # 更新每个持仓合约的盈亏

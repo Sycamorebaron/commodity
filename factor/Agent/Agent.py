@@ -20,7 +20,6 @@ class Agent:
         """
 
         now_equity = exchange.account.equity
-
         target_num = {}
         for contract in target_pos.keys():
             contract_price = exchange.contract_dict[contract.rstrip(string.digits)]._get_contract_data(
@@ -30,7 +29,8 @@ class Agent:
             contract_init_margin = \
                 contract_price * (exchange.contract_dict[contract.rstrip(string.digits)].init_margin_rate) * \
                 exchange.contract_dict[contract.rstrip(string.digits)].contract_unit
-            print(contract_init_margin, contract)
+            # print(contract_init_margin, contract)
+
             target_num[contract] = int(now_equity * target_pos[contract] / contract_init_margin)
 
         trade_info = self.trade_center.trade(

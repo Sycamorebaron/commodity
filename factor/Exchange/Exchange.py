@@ -35,4 +35,3 @@ class Exchange:
 
     def renew_account(self):
         pass
-
