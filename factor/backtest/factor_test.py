@@ -192,7 +192,8 @@ class MomentumBackTest(BackTest):
 
         contract_factor_list = []
         for comm in self.exchange.contract_dict.keys():
-            if pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date:
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date) or \
+                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
                 continue
             cal_factor_data = self._get_cal_factor_data(
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
@@ -228,10 +229,10 @@ class MomentumBackTest(BackTest):
 if __name__ == '__main__':
     back_test = MomentumBackTest(
         test_name='moment',
-        begin_date='2020-01-01',
+        begin_date='2011-01-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=NORMAL_CONTRACT_INFO[:5],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path,
         term='30T'
     )
