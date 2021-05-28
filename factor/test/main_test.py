@@ -6,7 +6,7 @@ import os
 
 
 class MainTest:
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage=True):
         self.test_name = test_name
         self._begin_date = begin_date
         self.end_date = end_date
@@ -16,15 +16,16 @@ class MainTest:
             init_cash=init_cash,
             local_data_path=local_data_path
         )
-        self.agent = self._gen_agent(begin_date=begin_date, end_date=end_date)
+        self.agent = self._gen_agent(begin_date=begin_date, end_date=end_date, leverage=leverage)
 
-    def _gen_agent(self, begin_date, end_date):
+    def _gen_agent(self, begin_date, end_date, leverage):
         return Agent(
             strategy=MAStrategy(
                 ma_para_list=[5, 10, 20, 60, 120]
             ),
             begin_date=begin_date,
             end_date=end_date,
+            leverage=leverage,
         )
 
     def _daily_process(self):

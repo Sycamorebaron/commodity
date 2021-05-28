@@ -16,6 +16,7 @@ def hf_rtn(begin_date='2010-01-04', end_date='2021-02-28'):
         begin_date=begin_date,
         end_date=end_date,
         init_cash=1000000,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'CF'],
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
     )

@@ -5,30 +5,37 @@ import string
 
 
 class Agent:
-    def __init__(self, strategy, begin_date, end_date):
+    def __init__(self, strategy, begin_date, end_date, leverage):
         self.strategy = strategy
         self.recorder = Recorder()
         self.trade_center = TradeCenter()
         self.earth_calender = EarthCalender(begin_date=begin_date, end_date=end_date)
+        self.leverage = leverage
 
-    def change_position(self, exchange, target_pos, now_dt):
+    def change_position(self, exchange, target_pos, now_dt, field='close'):
         """
         根据target pos计算应交易合约张数
         :param exchange:
         :param target_pos:
         :return:
         """
-
         now_equity = exchange.account.equity
         target_num = {}
         for contract in target_pos.keys():
             contract_price = exchange.contract_dict[contract.rstrip(string.digits)]._get_contract_data(
                 contract=contract,
-                dt=now_dt
+                dt=now_dt,
+                field=field,
             )
-            contract_init_margin = \
-                contract_price * (exchange.contract_dict[contract.rstrip(string.digits)].init_margin_rate) * \
-                exchange.contract_dict[contract.rstrip(string.digits)].contract_unit
+
+            if self.leverage:
+                contract_init_margin = \
+                    contract_price * (exchange.contract_dict[contract.rstrip(string.digits)].init_margin_rate) * \
+                    exchange.contract_dict[contract.rstrip(string.digits)].contract_unit
+            else:
+                contract_init_margin = contract_price * \
+                                       exchange.contract_dict[contract.rstrip(string.digits)].contract_unit
+
             # print(contract_init_margin, contract)
 
             target_num[contract] = int(now_equity * target_pos[contract] / contract_init_margin)
@@ -36,7 +43,8 @@ class Agent:
         trade_info = self.trade_center.trade(
             exchange=exchange,
             target_num=target_num,
-            now_dt=now_dt
+            now_dt=now_dt,
+            field=field
         )
         return trade_info
 

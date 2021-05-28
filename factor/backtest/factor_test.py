@@ -10,10 +10,9 @@ from utils.base_para import *
 
 
 class BackTest(MainTest):
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term):
-        MainTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage):
+        MainTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage)
         self.term_list = self._gen_term_list(term)
-
 
     def _last_dt(self, now_dt):
         """
@@ -42,9 +41,10 @@ class BackTest(MainTest):
         :param last_dt:
         :return:
         """
-        data = self.exchange.contract_dict[comm].data_dict[
-            self.exchange.contract_dict[comm].operate_contract
-        ]
+        now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
         cond1 = data['datetime'] >= last_dt
         cond2 = data['datetime'] < now_dt
         cal_factor_data = data.loc[cond1 & cond2].reset_index(drop=True)
@@ -116,10 +116,12 @@ class BackTest(MainTest):
             for contract in self.exchange.account.position.holding_position[comm].keys():
                 close_pos[contract] = 0
         if len(close_pos):
+
             close_trade_info = self.agent.change_position(
                 exchange=self.exchange,
                 target_pos=close_pos,
-                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
+                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time),
+                field='close'
             )
             self.exchange.account.equity = self.exchange.account.cash
             self.agent.recorder.record_trade(info=close_trade_info)
@@ -128,13 +130,13 @@ class BackTest(MainTest):
         target_pos = self.strategy_target_pos(
             now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
         )
-        # print('target_pos', target_pos)
 
         # 根据目标仓位调仓
         open_trade_info = self.agent.change_position(
             exchange=self.exchange,
             target_pos=target_pos,
-            now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
+            now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time),
+            field='open'
         )
 
         # 记录交易
@@ -186,27 +188,27 @@ class BackTest(MainTest):
         print('=' * 50)
 
 
-
 class MomentumBackTest(BackTest):
     def strategy_target_pos(self, now_dt):
 
         contract_factor_list = []
         for comm in self.exchange.contract_dict.keys():
-            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date) or \
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
                 (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
                 continue
+
             cal_factor_data = self._get_cal_factor_data(
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
             )
+            cal_factor_data['rtn'] = cal_factor_data['close'] / cal_factor_data['open'] - 1
             contract_factor_list.append(
                 {
                     'contract': cal_factor_data['order_book_id'].iloc[0],
-                    'factor': cal_factor_data['close'].iloc[-1] / cal_factor_data['open'].iloc[0] - 1
+                    'factor': cal_factor_data['rtn'].mean()
                 }
             )
         contract_factor_df = \
             pd.DataFrame(contract_factor_list).sort_values(by='factor', ascending=False).reset_index(drop=True)
-
         signal_pos = {}
 
         # 已经弃用，在外部平仓
@@ -219,21 +221,86 @@ class MomentumBackTest(BackTest):
         #             signal_pos[contract] = 0
 
         # 开仓信号
+
+        signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
+        signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
+
+        return signal_pos
+
+
+class DoiRtnBackTest(BackTest):
+    def strategy_target_pos(self, now_dt):
+
+        contract_factor_list = []
+        for comm in self.exchange.contract_dict.keys():
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
+                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
+                continue
+
+            cal_factor_data = self._get_cal_factor_data(
+                comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
+            )
+            cal_factor_data['rtn'] = cal_factor_data['close'] / cal_factor_data['open'] - 1
+            cal_factor_data['doi'] = cal_factor_data['open_interest'] - cal_factor_data['open_interest'].shift(1)
+            contract_factor_list.append(
+                {
+                    'contract': cal_factor_data['order_book_id'].iloc[0],
+                    'factor': cal_factor_data['doi'].corr(cal_factor_data['rtn'])
+                }
+            )
+        contract_factor_df = \
+            pd.DataFrame(contract_factor_list).sort_values(by='factor', ascending=False).reset_index(drop=True)
+        signal_pos = {}
+
+        # 开仓信号
         signal_pos[contract_factor_df['contract'].iloc[0]] = 0.5
         signal_pos[contract_factor_df['contract'].iloc[-1]] = -0.5
 
         return signal_pos
 
 
+class R1DV0BackTest(BackTest):
+    def strategy_target_pos(self, now_dt):
+
+        contract_factor_list = []
+        for comm in self.exchange.contract_dict.keys():
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
+                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
+                continue
+
+            cal_factor_data = self._get_cal_factor_data(
+                comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
+            )
+            cal_factor_data['rtn'] = cal_factor_data['close'] / cal_factor_data['open'] - 1
+            cal_factor_data['dv'] = cal_factor_data['volume'] - cal_factor_data['volume'].shift(1)
+            contract_factor_list.append(
+                {
+                    'contract': cal_factor_data['order_book_id'].iloc[0],
+                    'factor': cal_factor_data['rtn'].shift(1).corr(cal_factor_data['dv'])
+                }
+            )
+        contract_factor_df = \
+            pd.DataFrame(contract_factor_list).sort_values(by='factor', ascending=False).reset_index(drop=True)
+        signal_pos = {}
+
+        # 开仓信号
+        signal_pos[contract_factor_df['contract'].iloc[0]] = 0.5
+        signal_pos[contract_factor_df['contract'].iloc[-1]] = -0.5
+
+        return signal_pos
+
 
 if __name__ == '__main__':
-    back_test = MomentumBackTest(
+    back_test = DoiRtnBackTest(
         test_name='moment',
         begin_date='2011-01-01',
         end_date='2021-02-28',
-        init_cash=1000000,
+        init_cash=10000000,
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path,
-        term='30T'
+        term='30T',
+        leverage=False
     )
     back_test.test()
+    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\doirtn_equity.csv')
+    back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\doirtn_trade_hist.csv')

@@ -12,6 +12,7 @@ factor_list = [
     'R0DV3', 'R1DV0', 'R2DV0', 'R3DV0', 'range_pct', 'sec_com_range', 'sec_explained_ratio', 'skew', 'std',
     'vbig_rtn_mean', 'vbig_rtn_vol', 'vbig_rv_corr', 'vol_oi', 'nine', 'nine_half', 'ten', 'ten_half', 'eleven', 'one',
     'one_half', 'two'
+    # 'mean'
 ]
 
 local_files = []
@@ -28,11 +29,13 @@ for factor in factor_list:
         data['%s_f_rtn' % comm] = data['rtn'].shift(-1)
         data = data[['datetime', factor, '%s_f_rtn' % comm]].copy()
         data.columns = ['datetime', comm.split('.')[0], '%s_f_rtn' % comm.split('.')[0]]
+
         if len(factor_sum_data):
             factor_sum_data = factor_sum_data.merge(data, on='datetime', how='outer')
         else:
             factor_sum_data = data
-    for i in range(len(factor_sum_data)):
+
+    for i in range(len(factor_sum_data) - 1):
         dt = factor_sum_data['datetime'].iloc[i]
         print(dt)
         t_data = pd.DataFrame(factor_sum_data.iloc[i]).reset_index()
@@ -45,14 +48,22 @@ for factor in factor_list:
         t_factor_df = f_rtn_df.merge(factor_df, on='comm', how='inner')
         t_factor_df['f_rtn'] = t_factor_df['f_rtn'].astype(float)
         t_factor_df['factor'] = t_factor_df['factor'].astype(float)
+        t_factor_df.sort_values(by='factor', inplace=True, ascending=True)
+        t_factor_df.reset_index(drop=True, inplace=True)
 
         factor_ic.append(
             {
                 'datetime': dt,
-                'ic': t_factor_df['f_rtn'].corr(t_factor_df['factor'])
+                'ic': t_factor_df['f_rtn'].corr(t_factor_df['factor']),
+                'top': t_factor_df['comm'].iloc[-1],
+                'top_rtn': t_factor_df['factor'].iloc[-1],
+                'top_f_rtn': t_factor_df['f_rtn'].iloc[-1],
+                'bot': t_factor_df['comm'].iloc[0],
+                'bot_rtn': t_factor_df['factor'].iloc[0],
+                'bot_f_rtn': t_factor_df['f_rtn'].iloc[0],
             }
         )
     factor_ic_df = pd.DataFrame(factor_ic)
     factor_ic_df['%s_expanding_ic' % factor] = factor_ic_df['ic'].expanding().sum()
-    factor_ic_df.to_csv(os.path.join(r'D:\commodity\data\hf_ic', '%s.csv' % factor))
+    factor_ic_df.to_csv(os.path.join(r'D:\commodity\data\hf_ic', '%s_detail.csv' % factor))
 

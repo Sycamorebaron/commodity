@@ -15,7 +15,7 @@ hour_factor = {
     '14:00': 'two',
 }
 
-for roots, dirs, files in os.walk(r'E:\commodity\data\output\hf_comm_factor'):
+for roots, dirs, files in os.walk(r'D:\commodity\data\hf_comm_factor'):
     if files:
         for f in files:
             print(f)

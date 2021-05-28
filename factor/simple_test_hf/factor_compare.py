@@ -8,17 +8,17 @@ data_path = r'D:\commodity\data\hf_ic'
 factors = []
 for roots, dirs, files in os.walk(data_path):
     if files:
-        factors = files
+        factors = [i for i in files if i.endswith('detail.csv')]
 
 sum_data = pd.DataFrame()
 for f in factors:
     data = pd.read_csv(os.path.join(data_path, f))
     data['datetime'] = pd.to_datetime(data['datetime'])
-    data = data[['datetime', '%s_expanding_ic' % f[:-4]]]
-    data.columns = ['datetime', f[:-4]]
+    data = data[['datetime', '%s_expanding_ic' % f[:-11]]]
+    data.columns = ['datetime', f[:-11]]
     data = data.resample(on='datetime', rule='1d').agg(
         {
-            f[:-4]: 'last'
+            f[:-11]: 'last'
         }
     )
     data.reset_index(inplace=True)

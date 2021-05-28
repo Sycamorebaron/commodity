@@ -89,8 +89,8 @@ class Contract:
         self.contract_volume = self._fetch_volume()
         self.init_margin_rate = init_margin_rate
         self.contract_unit = contract_unit
-        self.open_comm = open_comm
-        self.close_comm = close_comm
+        self.open_comm = 0
+        self.close_comm = 0
 
     def _init_contract_volume(self):
         print('INIT CONTRACT VOLUME...')
@@ -232,14 +232,18 @@ class Contract:
             if contract not in now_open_contract:
                 self.data_dict.pop(contract)
 
-    def _get_contract_data(self, contract, dt):
+    def _get_contract_data(self, contract, dt, field):
         try:
             data = self.data_dict[contract]
         except Exception as e:
             print(e)
             raise Exception('Contract.get_contract_data ERROR: CONTRACT NOT IN DATA DICT')
-
-        price = data.loc[data['datetime'] == pd.to_datetime(dt), 'close'].values[0]
+        if field == 'open':
+            price = data.loc[data['datetime'] == pd.to_datetime(dt), field].values[0]
+        elif field == 'close':
+            price = data.loc[data['datetime'].shift(-1) == pd.to_datetime(dt), field].values[0]
+        else:
+            raise  Exception('WRONG FIELD')
 
         return price
 

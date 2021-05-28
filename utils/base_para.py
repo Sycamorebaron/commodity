@@ -22,7 +22,7 @@ DATA_PATH = os.path.join(ROOT_PATH, 'data')
 INPUT_DATA_PATH = os.path.join(DATA_PATH, 'input')
 OUTPUT_DATA_PATH = os.path.join(DATA_PATH, 'output')
 COMM_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'comm_factor')
-HF_COMM_FACTOR_DATA_PATH = os.path.join(OUTPUT_DATA_PATH, 'hf_comm_factor')
+HF_COMM_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'hf_comm_factor')
 F_RTN_DATA_PATH = os.path.join(DATA_PATH, 'f_rtn')
 HF_FACTOR_DATA_PATH = os.path.join(DATA_PATH, 'HFfactor')
 
@@ -133,7 +133,7 @@ DEAD_CONTRACT_INFO = \
     ]
 
 ABO_LIST = [
-    'BB', 'IF', 'IH', 'IC', 'JR', 'LR', 'PM', 'RI', 'RR', 'RS', 'T', 'TS', 'TF', 'WH', 'WR', 'WS', 'WT', 'S', 'FU'
+    'BB', 'IF', 'IH', 'IC', 'JR', 'LR', 'PM', 'RI', 'RR', 'RS', 'T', 'TS', 'TF', 'WH', 'WR', 'WS', 'WT', 'S', 'FU', 'B'
 ]
 DATA_CORRUPTED_LIST = [pd.to_datetime('2010-12-20')]
 

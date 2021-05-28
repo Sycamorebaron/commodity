@@ -117,7 +117,7 @@ class TradeCenter:
         print('trade_center.dec', latest_pnl, release_pnl)
         print('trade_center.dec', exchange.account.position.holding_position[commodity][contract], exchange.account.cash)
 
-    def trade(self, exchange, target_num, now_dt):
+    def trade(self, exchange, target_num, now_dt, field):
 
         trade_info = []
         for contract in target_num.keys():
@@ -125,8 +125,7 @@ class TradeCenter:
                 hold_num = exchange.account.position.holding_position[contract.strip('1234567890')][contract]['num']
             else:
                 hold_num = 0
-            price = exchange.contract_dict[contract.rstrip(string.digits)]._get_contract_data(contract, now_dt)
-
+            price = exchange.contract_dict[contract.rstrip(string.digits)]._get_contract_data(contract, now_dt, field)
             # 无持仓
             if hold_num == 0:
                 # 开多

@@ -41,7 +41,6 @@ class HFFactor(FactorTest):
         return data
 
 
-
 class HFRtn(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
@@ -78,6 +77,10 @@ class HFRtn(HFFactor):
             )
             _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
             today_data = self.trunc_data(_data)
+            today_data['datetime'] = today_data['datetime'].apply(
+                lambda x: x - relativedelta(minutes=1)
+            )
+
             if len(today_data):
                 data_30t = self.resample(today_data.copy(), rule='30T')
                 data_30t['rtn'] = (data_30t['close'] / data_30t['open']) - 1
@@ -119,6 +122,8 @@ class HFRtnMoment(HFFactor):
             open_comm_list.append(comm)
 
         t_factor_dict = self.t_daily_factor(open_comm_list)
+        print(t_factor_dict['mean'])
+        exit()
 
         self.mean.append(t_factor_dict['mean'])
         self.std.append(t_factor_dict['std'])
@@ -149,6 +154,7 @@ class HFRtnMoment(HFFactor):
             today_data = self.trunc_data(_data)
             if len(today_data):
                 today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 today_data = self.add_label(data=today_data)
 
                 res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
@@ -167,7 +173,6 @@ class HFRtnMoment(HFFactor):
                     else:
                         _factor_dict[factor] = \
                             res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
-
         return _factor_dict
 
 
@@ -930,6 +935,7 @@ class HFSimplePriceVolumeFactor(HFFactor):
             'd_oi': d_oi,
         }
 
+
 class HFPVCorrFactor(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
@@ -1074,7 +1080,7 @@ class HFPVCorrFactor(HFFactor):
 
 
 if __name__ == '__main__':
-    cal_factor = HFRtn(
+    cal_factor = HFRtnMoment(
         factor_name='moment',
         begin_date='2011-01-01',
         end_date='2021-02-28',
@@ -1083,6 +1089,4 @@ if __name__ == '__main__':
         local_data_path=local_data_path
     )
     cal_factor.test()
-    rtn = pd.concat(cal_factor.rtn_30t)
-    rtn.reset_index(drop=True, inplace=True)
-    rtn.to_csv(r'/home/sycamore/PycharmProjects/commodity/data/output/HFfactor/rtn_30t.csv')
+
