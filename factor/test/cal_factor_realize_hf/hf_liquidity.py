@@ -37,5 +37,5 @@ def hf_liquidity_pirce(begin_date='2010-01-04', end_date='2021-02-28'):
 
 
 if __name__ == '__main__':
-    hf_liquidity_pirce('2011-01-01', '2011-03-01')
+    hf_liquidity_pirce('2011-01-01', '2021-02-28')
 

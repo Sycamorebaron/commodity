@@ -36,5 +36,5 @@ def hf_rtn_moment(begin_date='2010-01-04', end_date='2021-02-28'):
     kurt.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tkurt.csv'))
 
 if __name__ == '__main__':
-    hf_rtn_moment('2011-01-01', '2011-03-01')
+    hf_rtn_moment('2011-01-01', '2021-02-28')
 

@@ -122,8 +122,7 @@ class HFRtnMoment(HFFactor):
             open_comm_list.append(comm)
 
         t_factor_dict = self.t_daily_factor(open_comm_list)
-        print(t_factor_dict['mean'])
-        exit()
+
 
         self.mean.append(t_factor_dict['mean'])
         self.std.append(t_factor_dict['std'])
@@ -741,9 +740,9 @@ class HFLiquidity(HFFactor):
 
         x['rtn'] = x['close'] / x['open'] - 1
         x['x'] = (x['rtn'].apply(lambda x : 1 if x >= 0 else -1) * x['volume']).shift(1)
-        x = x[1:]['x'].copy()
-        y = x[1:]['rtn'].copy()
-        model = sm.OLS(endog=y, exog=x)
+        X = x[1:]['x'].copy()
+        Y = x[1:]['rtn'].copy()
+        model = sm.OLS(endog=Y, exog=X)
         res = model.fit()
         pastor_gamma = dict(res.params)['x']
 

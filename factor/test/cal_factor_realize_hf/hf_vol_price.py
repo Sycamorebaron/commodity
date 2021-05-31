@@ -35,4 +35,3 @@ def hf_vol_pirce(begin_date='2011-01-01', end_date='2021-02-28'):
 
 if __name__ == '__main__':
     hf_vol_pirce()
-
