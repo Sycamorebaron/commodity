@@ -33,8 +33,8 @@ class HFFactor(FactorTest):
     @staticmethod
     def add_label(data):
         data['label'] = data['datetime'].apply(
-            lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
-            # lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '16', '31', '46']) else None
+            # lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
+            lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '16', '31', '46']) else None
 
         )
         data['label'].fillna(method='ffill', inplace=True)
@@ -82,7 +82,7 @@ class HFRtn(HFFactor):
             )
 
             if len(today_data):
-                data_30t = self.resample(today_data.copy(), rule='30T')
+                data_30t = self.resample(today_data.copy(), rule='15T')
                 data_30t['rtn'] = (data_30t['close'] / data_30t['open']) - 1
                 data_30t = data_30t[['datetime', 'rtn']]
                 data_30t.columns = ['datetime', comm]

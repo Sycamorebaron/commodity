@@ -35,11 +35,11 @@ def hf_simple_price_vol(begin_date='2010-01-04', end_date='2021-02-28'):
     d_oi.reset_index(drop=True, inplace=True)
 
 
-    highest_rtn.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'highest_rtn.csv'))
-    lowest_rtn.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'lowest_rtn.csv'))
-    range_pct.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'range_pct.csv'))
-    vol_oi.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'vol_oi.csv'))
-    d_oi.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_oi.csv'))
+    highest_rtn.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Thighest_rtn.csv'))
+    lowest_rtn.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tlowest_rtn.csv'))
+    range_pct.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Trange_pct.csv'))
+    vol_oi.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tvol_oi.csv'))
+    d_oi.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Td_oi.csv'))
 
 
 if __name__ == '__main__':

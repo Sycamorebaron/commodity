@@ -30,10 +30,10 @@ def hf_rtn_moment(begin_date='2010-01-04', end_date='2021-02-28'):
     skew.reset_index(drop=True, inplace=True)
     kurt.reset_index(drop=True, inplace=True)
 
-    mean.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'mean.csv'))
-    std.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'std.csv'))
-    skew.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'skew.csv'))
-    kurt.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'kurt.csv'))
+    mean.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tmean.csv'))
+    std.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tstd.csv'))
+    skew.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tskew.csv'))
+    kurt.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tkurt.csv'))
 
 if __name__ == '__main__':
     hf_rtn_moment('2011-01-01', '2011-03-01')

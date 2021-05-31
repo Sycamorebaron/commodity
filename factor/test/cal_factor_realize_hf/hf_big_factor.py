@@ -35,12 +35,12 @@ def hf_big_factor(begin_date='2010-01-04', end_date='2021-02-28'):
     abig_rtn_vol.reset_index(drop=True, inplace=True)
     abig_ra_corr.reset_index(drop=True, inplace=True)
 
-    vbig_rtn_mean.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'vbig_rtn_mean.csv'))
-    vbig_rtn_vol.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'vbig_rtn_vol.csv'))
-    vbig_rv_corr.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'vbig_rv_corr.csv'))
-    abig_rtn_mean.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'abig_rtn_mean.csv'))
-    abig_rtn_vol.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'abig_rtn_vol.csv'))
-    abig_ra_corr.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'abig_ra_corr.csv'))
+    vbig_rtn_mean.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tvbig_rtn_mean.csv'))
+    vbig_rtn_vol.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tvbig_rtn_vol.csv'))
+    vbig_rv_corr.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tvbig_rv_corr.csv'))
+    abig_rtn_mean.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tabig_rtn_mean.csv'))
+    abig_rtn_vol.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tabig_rtn_vol.csv'))
+    abig_ra_corr.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tabig_ra_corr.csv'))
 
 
 if __name__ == '__main__':

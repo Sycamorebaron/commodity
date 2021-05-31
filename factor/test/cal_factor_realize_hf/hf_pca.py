@@ -39,14 +39,14 @@ def hf_pca_price(begin_date='2010-01-04', end_date='2021-02-28'):
     first_explained_ratio.reset_index(drop=True, inplace=True)
     sec_explained_ratio.reset_index(drop=True, inplace=True)
 
-    d_first_com.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_first_com.csv'))
-    d_sec_com.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_sec_com.csv'))
-    first_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'first_com_range.csv'))
-    sec_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'sec_com_range.csv'))
-    d_first_com_std.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_first_com_std.csv'))
-    d_sec_com_std.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'd_sec_com_std.csv'))
-    first_explained_ratio.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'first_explained_ratio.csv'))
-    sec_explained_ratio.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'sec_explained_ratio.csv'))
+    d_first_com.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Td_first_com.csv'))
+    d_sec_com.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Td_sec_com.csv'))
+    first_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tfirst_com_range.csv'))
+    sec_com_range.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tsec_com_range.csv'))
+    d_first_com_std.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Td_first_com_std.csv'))
+    d_sec_com_std.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Td_sec_com_std.csv'))
+    first_explained_ratio.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tfirst_explained_ratio.csv'))
+    sec_explained_ratio.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tsec_explained_ratio.csv'))
 
 
 if __name__ == '__main__':

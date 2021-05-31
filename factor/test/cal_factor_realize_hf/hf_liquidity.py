@@ -30,10 +30,10 @@ def hf_liquidity_pirce(begin_date='2010-01-04', end_date='2021-02-28'):
     LOT.reset_index(drop=True, inplace=True)
     pastor_gamma.reset_index(drop=True, inplace=True)
 
-    amihud.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'amihud.csv'))
-    roll_spread.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'roll_spread.csv'))
-    LOT.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'LOT.csv'))
-    pastor_gamma.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'pastor_gamma.csv'))
+    amihud.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tamihud.csv'))
+    roll_spread.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Troll_spread.csv'))
+    LOT.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15TLOT.csv'))
+    pastor_gamma.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tpastor_gamma.csv'))
 
 
 if __name__ == '__main__':

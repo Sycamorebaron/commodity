@@ -147,6 +147,56 @@ class BackTest(MainTest):
         # print('-' * 70)
         # print('$' * 55)
 
+    def _termly_process_skip_rest(self, term_begin_time):
+        """
+        每期进行的流程
+        :param term_begin_time:
+        :return:
+        """
+        # print('$' * 25, term_begin_time, '$' * 25)
+        # print('-' * 25, 'before change position', '-' * 25)
+        # print('CASH', self.exchange.account.cash)
+        # print('position\n', self.exchange.account.position.holding_position)
+        # print('-' * 70)
+
+        # 先平仓
+        close_pos = {}
+        for comm in self.exchange.account.position.holding_position.keys():
+            for contract in self.exchange.account.position.holding_position[comm].keys():
+                close_pos[contract] = 0
+        if len(close_pos):
+            close_trade_info = self.agent.change_position(
+                exchange=self.exchange,
+                target_pos=close_pos,
+                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time),
+                field='close'
+            )
+            self.exchange.account.equity = self.exchange.account.cash
+            self.agent.recorder.record_trade(info=close_trade_info)
+
+        if term_begin_time not in ['10:01', '10:31']:
+
+            # 再开仓
+            target_pos = self.strategy_target_pos(
+                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
+            )
+
+            # 根据目标仓位调仓
+            open_trade_info = self.agent.change_position(
+                exchange=self.exchange,
+                target_pos=target_pos,
+                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time),
+                field='open'
+            )
+
+            # 记录交易
+            self.agent.recorder.record_trade(info=open_trade_info)
+            # print('-' * 25, 'after change position', '-' * 25)
+            # print('CASH', self.exchange.account.cash)
+            # print('position\n',self.exchange.account.position.holding_position)
+            # print('-' * 70)
+            # print('$' * 55)
+
     def _daily_process(self):
         """
         每日进行的流程
@@ -190,7 +240,6 @@ class BackTest(MainTest):
 
 class MomentumBackTest(BackTest):
     def strategy_target_pos(self, now_dt):
-
         contract_factor_list = []
         for comm in self.exchange.contract_dict.keys():
             if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
@@ -226,6 +275,9 @@ class MomentumBackTest(BackTest):
         signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
 
         return signal_pos
+
+    def _termly_process(self, term_begin_time):
+        BackTest._termly_process_skip_rest(self, term_begin_time)
 
 
 class DoiRtnBackTest(BackTest):
@@ -291,9 +343,9 @@ class R1DV0BackTest(BackTest):
 
 
 if __name__ == '__main__':
-    back_test = DoiRtnBackTest(
+    back_test = MomentumBackTest(
         test_name='moment',
-        begin_date='2011-01-01',
+        begin_date='2018-01-01',
         end_date='2021-02-28',
         init_cash=10000000,
         contract_list=NORMAL_CONTRACT_INFO,
@@ -302,5 +354,5 @@ if __name__ == '__main__':
         leverage=False
     )
     back_test.test()
-    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\doirtn_equity.csv')
-    back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\doirtn_trade_hist.csv')
+    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')
+    # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')

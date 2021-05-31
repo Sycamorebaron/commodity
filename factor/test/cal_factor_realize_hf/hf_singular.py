@@ -28,9 +28,9 @@ def hf_singular(begin_date='2010-01-04', end_date='2021-02-28'):
     BV_sigma.reset_index(drop=True, inplace=True)
     bollerslev_RSJ.reset_index(drop=True, inplace=True)
 
-    BV.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'BV.csv'))
-    BV_sigma.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'BV_sigma.csv'))
-    bollerslev_RSJ.to_csv(os.path.join(OUTPUT_DATA_PATH, 'HFfactor', 'bollerslev_RSJ.csv'))
+    BV.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15TBV.csv'))
+    BV_sigma.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15TBV_sigma.csv'))
+    bollerslev_RSJ.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Tbollerslev_RSJ.csv'))
 
 
 if __name__ == '__main__':
