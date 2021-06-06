@@ -1,6 +1,6 @@
-from backtest.Exchange.Exchange import Exchange
-from backtest.Agent.Agent import Agent
-from backtest.Agent.Strategy import MAStrategy
+from raw_backtest.Exchange.Exchange import Exchange
+from raw_backtest.Agent.Agent import Agent
+from raw_backtest.Agent.Strategy import MAStrategy
 from utils.base_para import OUTPUT_DATA_PATH
 import os
 

@@ -1,19 +1,18 @@
 import sys
 import os
 import pandas as pd
-from sklearn.decomposition import PCA
-import numpy as np
+from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
-import statsmodels.api as sm
+import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
 from factor.backtest.factor_test import BackTest
-from utils.base_para import local_data_path, local_15t_factor_path, NORMAL_CONTRACT_INFO
+from utils.base_para import local_data_path, local_15t_factor_path, NORMAL_CONTRACT_INFO, timer
 
 pd.set_option('expand_frame_repr', False)
-# pd.set_option('display.max_rows', 200)
+pd.set_option('display.max_rows', 200)
 
 
 class HFSynTest(BackTest):
@@ -37,6 +36,35 @@ class HFSynTest(BackTest):
         )
         data['label'].fillna(method='ffill', inplace=True)
         return data
+
+    @staticmethod
+    def _cal_ic(t_data):
+        """
+        根据传入的t_data计算因子该期的ic
+        :param t_data:
+        :return:
+        """
+        _factor_df = t_data.loc[t_data['index'].apply(lambda x: not x.endswith('f_rtn'))].copy()
+        _f_rtn_df = t_data.loc[t_data['index'].apply(lambda x: x.endswith('f_rtn'))].copy()
+        _f_rtn_df['index'] = _f_rtn_df['index'].apply(lambda x: x.split('_')[0])
+        _f_rtn_df.columns = ['comm', 'f_rtn']
+        _factor_df.columns = ['comm', 'factor']
+        t_factor_df = _f_rtn_df.merge(_factor_df, on='comm', how='inner')
+        t_factor_df['f_rtn'] = t_factor_df['f_rtn'].astype(float)
+        t_factor_df['factor'] = t_factor_df['factor'].astype(float)
+        ic = t_factor_df['f_rtn'].corr(t_factor_df['factor'])
+        return ic
+
+    @staticmethod
+    def pred_rtn(train_data, test_data):
+        factors = [i for i in train_data.columns if i != '15Tf_rtn']
+        train_X = train_data[factors]
+        train_Y = train_data['15Tf_rtn']
+
+        model_st = RandomForestRegressor(random_state=666)
+        model_st.fit(X=train_X, y=train_Y)
+        pred_res = model_st.predict(X=[list(test_data[factors])])[0]
+        return pred_res
 
     def _open_comm(self):
         """
@@ -63,10 +91,12 @@ class HFSynTest(BackTest):
             factor_dict[f.split('.')[0]] = data
         return factor_dict
 
-    def form_train_data(self, now_dt):
+    def form_train_data(self, now_dt) -> dict:
         """
         筛选时间
-        夜盘：小时大于21 & 小时小于8
+        去掉夜盘：小时大于21 & 小时小于8
+        去掉休息时间：10：15-10：30
+
         :param now_dt:
         :return:
         """
@@ -91,24 +121,6 @@ class HFSynTest(BackTest):
             _comm_d['15Tf_rtn'] = _comm_d['15Thf_rtn'].shift(-1)
             comm_factor[comm] = _comm_d
         return comm_factor
-
-    @staticmethod
-    def _cal_ic(t_data):
-        """
-        根据传入的t_data计算因子该期的ic
-        :param t_data:
-        :return:
-        """
-        _factor_df = t_data.loc[t_data['index'].apply(lambda x: not x.endswith('f_rtn'))].copy()
-        _f_rtn_df = t_data.loc[t_data['index'].apply(lambda x: x.endswith('f_rtn'))].copy()
-        _f_rtn_df['index'] = _f_rtn_df['index'].apply(lambda x: x.split('_')[0])
-        _f_rtn_df.columns = ['comm', 'f_rtn']
-        _factor_df.columns = ['comm', 'factor']
-        t_factor_df = _f_rtn_df.merge(_factor_df, on='comm', how='inner')
-        t_factor_df['f_rtn'] = t_factor_df['f_rtn'].astype(float)
-        t_factor_df['factor'] = t_factor_df['factor'].astype(float)
-        ic = t_factor_df['f_rtn'].corr(t_factor_df['factor'])
-        return ic
 
     def _factor_exp_ic_dist(self, factor, factor_df):
         """
@@ -176,7 +188,7 @@ class HFSynTest(BackTest):
                     factor_df = factor_df.merge(comm_f_data, on='datetime', how='outer')
                 else:
                     factor_df = comm_f_data
-            factor_df = factor_df[-2-self.train_data_len:-1].copy().reset_index(drop=True)
+            factor_df = factor_df[-2-self.train_data_len: -1].copy().reset_index(drop=True)
 
             factor_t_exp_ic_dist[factor] = self._factor_exp_ic_dist(factor=factor, factor_df=factor_df)
 
@@ -191,7 +203,40 @@ class HFSynTest(BackTest):
     def strategy_target_pos(self, now_dt):
         comm_factor = self.form_train_data(now_dt=now_dt)
         t_factor_list = self._t_factor_list(comm_factor)
-        exit()
+        res_list = []
+        for comm in comm_factor.keys():
+            t_comm_data = comm_factor[comm][['15Tf_rtn'] + t_factor_list][-1-self.train_data_len:]
+            for col in [i for i in t_comm_data.columns if i != '15Tf_rtn']:
+                t_comm_data[col] = (t_comm_data[col] - t_comm_data[col].mean()) / t_comm_data[col].std(ddof=1)
+
+            train_data = t_comm_data[:-1].dropna(how='any')
+            # train_data = t_comm_data[:-1]
+            test_data = t_comm_data.iloc[-1]
+
+            # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
+            if np.isnan(test_data[1:]).any():
+                test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
+
+                t_comm_data = t_comm_data[['15Tf_rtn'] + [i for i in t_comm_data.columns if i not in test_miss_col]]
+                train_data = t_comm_data[:-1].dropna(how='any')
+                test_data = t_comm_data.iloc[-1]
+
+            pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
+            res_list.append(
+                {
+                    'comm': comm,
+                    'pred_res': pred_res
+                }
+            )
+        res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
+        signal = {
+            self.exchange.contract_dict[res_df['comm'].iloc[0]].now_main_contract(
+                now_date=self.agent.earth_calender.now_date): -0.5,
+            self.exchange.contract_dict[res_df['comm'].iloc[-1]].now_main_contract(
+                now_date=self.agent.earth_calender.now_date): 0.5
+        }
+        print(signal)
+        return signal
 
     def _daily_process(self):
         self.open_comm = self._open_comm()
@@ -205,12 +250,12 @@ if __name__ == '__main__':
         begin_date='2012-01-04',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        # contract_list=NORMAL_CONTRACT_INFO,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
         leverage=False,
-        train_data_len=100
+        train_data_len=200
     )
     syn_test.test()

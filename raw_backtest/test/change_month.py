@@ -1,6 +1,6 @@
-from backtest.Agent.Agent import Agent
-from backtest.Agent.Strategy import ChangeMonthStrategy
-from backtest.test.main_test import MainTest
+from raw_backtest.Agent.Agent import Agent
+from raw_backtest.Agent.Strategy import ChangeMonthStrategy
+from raw_backtest.test.main_test import MainTest
 
 
 class ChangeMonthTest(MainTest):

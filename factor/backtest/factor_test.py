@@ -55,19 +55,25 @@ class BackTest(MainTest):
     def _gen_term_list(term):
         begin_time = pd.to_datetime('2000-01-01 09:01')
         end_time = pd.to_datetime('2000-01-01 15:00')
-        rest_time_begin = pd.to_datetime('2000-01-01 11:30')
-        rest_time_end = pd.to_datetime('2000-01-01 13:30')
+        rest_time_begin_1 = pd.to_datetime('2000-01-01 10:15')
+        rest_time_end_1 = pd.to_datetime('2000-01-01 10:30')
+        rest_time_begin_2 = pd.to_datetime('2000-01-01 11:30')
+        rest_time_end_2 = pd.to_datetime('2000-01-01 13:30')
 
         now_term_begin = begin_time
         term_list = []
         if term.endswith('T'):
             while now_term_begin < end_time:
-                if (now_term_begin < rest_time_begin) or (now_term_begin > rest_time_end):
+                if (now_term_begin < rest_time_begin_1) or \
+                    ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
+                    (now_term_begin > rest_time_end_2):
                     term_list.append(now_term_begin.strftime('%H:%M'))
                 now_term_begin += timedelta(minutes=int(term.strip('T')))
         elif term.endswith('H'):
             while now_term_begin < end_time:
-                if (now_term_begin < rest_time_begin) or (now_term_begin > rest_time_end):
+                if (now_term_begin < rest_time_begin_1) or \
+                    ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
+                    (now_term_begin > rest_time_end_2):
                     term_list.append(now_term_begin.strftime('%H:%M'))
                 now_term_begin += timedelta(hours=int(term.strip('H')))
         else:

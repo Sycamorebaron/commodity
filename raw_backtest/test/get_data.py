@@ -1,5 +1,5 @@
 import pandas as pd
-from backtest.test.main_test import MainTest
+from raw_backtest.test.main_test import MainTest
 pd.set_option('expand_frame_repr', False)
 
 

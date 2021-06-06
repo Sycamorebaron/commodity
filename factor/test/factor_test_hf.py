@@ -1047,19 +1047,28 @@ class HFPVCorrFactor(HFFactor):
         return _factor_dict
 
     def _cal(self, x):
-        P1V0 = x['close'].shift(1).corr(x['volume'])
-        P2V0 = x['close'].shift(2).corr(x['volume'])
-        P3V0 = x['close'].shift(3).corr(x['volume'])
-        P0V1 = x['close'].shift(-1).corr(x['volume'])
-        P0V2 = x['close'].shift(-2).corr(x['volume'])
-        P0V3 = x['close'].shift(-3).corr(x['volume'])
 
-        R1DV0 = x['rtn'].shift(1).corr(x['dv'])
-        R2DV0 = x['rtn'].shift(2).corr(x['dv'])
-        R3DV0 = x['rtn'].shift(3).corr(x['dv'])
-        R0DV1 = x['rtn'].shift(-1).corr(x['dv'])
-        R0DV2 = x['rtn'].shift(-2).corr(x['dv'])
-        R0DV3 = x['rtn'].shift(-3).corr(x['dv'])
+        steady_cond_1 = (x['close'].std(ddof=1) == 0) or (x['volume'].std(ddof=1) == 0)
+        if steady_cond_1:
+            P1V0, P2V0, P3V0, P0V1, P0V2, P0V3 = 0, 0, 0, 0, 0, 0
+        else:
+            P1V0 = x['close'].shift(1).corr(x['volume'])
+            P2V0 = x['close'].shift(2).corr(x['volume'])
+            P3V0 = x['close'].shift(3).corr(x['volume'])
+            P0V1 = x['close'].shift(-1).corr(x['volume'])
+            P0V2 = x['close'].shift(-2).corr(x['volume'])
+            P0V3 = x['close'].shift(-3).corr(x['volume'])
+
+        steady_cond_2 = (x['rtn'].std(ddof=1) == 0) or (x['dv'].std(ddof=1) == 0)
+        if steady_cond_2:
+            R1DV0, R2DV0, R3DV0, R0DV1, R0DV2, R0DV3 = 0, 0, 0, 0, 0, 0
+        else:
+            R1DV0 = x['rtn'].shift(1).corr(x['dv'])
+            R2DV0 = x['rtn'].shift(2).corr(x['dv'])
+            R3DV0 = x['rtn'].shift(3).corr(x['dv'])
+            R0DV1 = x['rtn'].shift(-1).corr(x['dv'])
+            R0DV2 = x['rtn'].shift(-2).corr(x['dv'])
+            R0DV3 = x['rtn'].shift(-3).corr(x['dv'])
 
         return {
             'P1V0': P1V0,

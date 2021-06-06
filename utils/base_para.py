@@ -1,6 +1,7 @@
 import os, sys
 from sqlalchemy import create_engine
 import pandas as pd
+import time
 
 system = sys.platform
 if system.startswith('win'):
@@ -17,6 +18,17 @@ elif system.startswith('linux'):
     local_15t_factor_path = r'/home/sycamore/15t_factor'
 else:
     local_data_path = ''
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        end = time.time()
+        print(func.__name__, 'Timer', round(end-start, 4))
+        return res
+    return wrapper
+
 
 ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 DATA_PATH = os.path.join(ROOT_PATH, 'data')

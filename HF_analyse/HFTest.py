@@ -1,6 +1,6 @@
-from backtest.test.main_test import MainTest
-from backtest.Exchange.Contract import Contract
-from backtest.Exchange.Exchange import Exchange
+from raw_backtest.test.main_test import MainTest
+from raw_backtest.Exchange.Contract import Contract
+from raw_backtest.Exchange.Exchange import Exchange
 import statsmodels.api as sm
 import pandas as pd
 pd.set_option('expand_frame_repr', False)
