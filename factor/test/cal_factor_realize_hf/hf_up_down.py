@@ -51,5 +51,5 @@ def hf_up_down(begin_date='2010-01-04', end_date='2021-02-28'):
     trend_ratio.to_csv(os.path.join(OUTPUT_DATA_PATH, '15THFfactor', '15Ttrend_ratio.csv'))
 
 if __name__ == '__main__':
-    hf_up_down('2011-01-01', '2011-03-01')
+    hf_up_down()
 

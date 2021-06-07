@@ -223,6 +223,7 @@ class HFUpDownFactor(HFFactor):
         self.trend_ratio.append(t_factor_dict['trend_ratio'])
 
     def _cal(self, x):
+        x['vol'] = x['volume']
         x['mv'] = x['move'] * x['vol']
         up_rtn_mean = x.loc[x['rtn'] > 0, 'rtn'].mean() if len(x.loc[x['rtn'] > 0, 'rtn']) > 0 else 0
         up_rtn_std = x.loc[x['rtn'] > 0, 'rtn'].std(ddof=1) if len(x.loc[x['rtn'] > 0, 'rtn']) > 0 else 0

@@ -221,13 +221,14 @@ class HFSynTest(BackTest):
                 train_data = t_comm_data[:-1].dropna(how='any')
                 test_data = t_comm_data.iloc[-1]
 
-            pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
-            res_list.append(
-                {
-                    'comm': comm,
-                    'pred_res': pred_res
-                }
-            )
+            if len(train_data) & len(test_data):
+                pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
+                res_list.append(
+                    {
+                        'comm': comm,
+                        'pred_res': pred_res
+                    }
+                )
         res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
         signal = {
             self.exchange.contract_dict[res_df['comm'].iloc[0]].now_main_contract(
@@ -242,6 +243,9 @@ class HFSynTest(BackTest):
         self.open_comm = self._open_comm()
         BackTest._daily_process(self)
 
+        if self.agent.earth_calender.now_date.strftime('%m') == '12':
+            eq_df = syn_test.agent.recorder.equity_curve()
+            eq_df.to_csv('%s_syn_eq.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
 
 if __name__ == '__main__':
 
@@ -259,3 +263,5 @@ if __name__ == '__main__':
         train_data_len=200
     )
     syn_test.test()
+    eq_df = syn_test.agent.recorder.equity_curve()
+    eq_df.to_csv('syn_test_equity.csv')
