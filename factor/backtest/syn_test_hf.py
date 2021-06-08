@@ -222,8 +222,13 @@ class HFSynTest(BackTest):
                 train_data = t_comm_data[:-1].dropna(how='any')
                 test_data = t_comm_data.iloc[-1]
 
-            if (len(train_data) != 0) or (len(test_data) != 0):
-
+            if len(train_data) == 0:
+                print('=' * 100)
+                print(train_data)
+                print('=' * 100)
+                continue
+            else:
+                print(train_data)
                 pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
                 res_list.append(
                     {
@@ -231,6 +236,7 @@ class HFSynTest(BackTest):
                         'pred_res': pred_res
                     }
                 )
+
         res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
         signal = {
             self.exchange.contract_dict[res_df['comm'].iloc[0]].now_main_contract(
