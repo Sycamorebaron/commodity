@@ -222,7 +222,7 @@ class HFSynTest(BackTest):
                 train_data = t_comm_data[:-1].dropna(how='any')
                 test_data = t_comm_data.iloc[-1]
 
-            if (len(train_data) != 0) & (len(test_data) != 0):
+            if (len(train_data) != 0) or (len(test_data) != 0):
 
                 pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
                 res_list.append(
@@ -254,7 +254,7 @@ if __name__ == '__main__':
 
     syn_test = HFSynTest(
         factor_name='hf_syn',
-        begin_date='2012-01-04',
+        begin_date='2013-03-14',
         end_date='2021-02-28',
         init_cash=1000000,
         # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
