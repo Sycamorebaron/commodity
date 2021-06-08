@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 sys.path.append(BASE_DIR)
 
 from factor.backtest.factor_test import BackTest
-from utils.base_para import local_data_path, local_15t_factor_path, NORMAL_CONTRACT_INFO, timer
+from utils.base_para import local_data_path, local_15t_factor_path, NORMAL_CONTRACT_INFO
 
 pd.set_option('expand_frame_repr', False)
 pd.set_option('display.max_rows', 200)
@@ -77,12 +77,13 @@ class HFSynTest(BackTest):
             self.agent.earth_calender.now_date - relativedelta(days=self.train_data_len)
         ]
 
-    def _load_factor(self, local_factor_data_path) -> dict:
+    @staticmethod
+    def _load_factor(local_factor_data_path) -> dict:
         files = []
         factor_dict = {}
         for roots, dirs, files in os.walk(local_factor_data_path):
             if files:
-                 break
+                break
         print('load factors...')
         for f in files:
             print(f)
@@ -221,7 +222,8 @@ class HFSynTest(BackTest):
                 train_data = t_comm_data[:-1].dropna(how='any')
                 test_data = t_comm_data.iloc[-1]
 
-            if len(train_data) & len(test_data):
+            if (len(train_data) != 0) & (len(test_data) != 0):
+
                 pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
                 res_list.append(
                     {
@@ -247,6 +249,7 @@ class HFSynTest(BackTest):
             eq_df = syn_test.agent.recorder.equity_curve()
             eq_df.to_csv('%s_syn_eq.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
 
+
 if __name__ == '__main__':
 
     syn_test = HFSynTest(
@@ -263,5 +266,5 @@ if __name__ == '__main__':
         train_data_len=200
     )
     syn_test.test()
-    eq_df = syn_test.agent.recorder.equity_curve()
-    eq_df.to_csv('syn_test_equity.csv')
+    t_eq_df = syn_test.agent.recorder.equity_curve()
+    t_eq_df.to_csv('syn_test_equity.csv')
