@@ -909,6 +909,7 @@ class HFSimplePriceVolumeFactor(HFFactor):
 
                 res['datetime'] = res.index
 
+
                 for factor in _factor_dict.keys():
 
                     if len(_factor_dict[factor]):
@@ -1088,14 +1089,124 @@ class HFPVCorrFactor(HFFactor):
         }
 
 
+class HFVolumeRatioFactor(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.v5_v20 = []
+        self.v5_v30 = []
+        self.v10_v30 = []
+        self.std5_std20 = []
+        self.std5_std30 = []
+        self.std10_std30 = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.v5_v20.append(t_factor_dict['v5_v20'])
+        self.v5_v30.append(t_factor_dict['v5_v30'])
+        self.v10_v30.append(t_factor_dict['v10_v30'])
+        self.std5_std20.append(t_factor_dict['std5_std20'])
+        self.std5_std30.append(t_factor_dict['std5_std30'])
+        self.std10_std30.append(t_factor_dict['std10_std30'])
+
+    def t_daily_factor(self, open_comm_list) -> dict:
+
+        _factor_dict = {
+            'v5_v20': pd.DataFrame(),
+            'v5_v30': pd.DataFrame(),
+            'v10_v30': pd.DataFrame(),
+            'std5_std20': pd.DataFrame(),
+            'std5_std30': pd.DataFrame(),
+            'std10_std30': pd.DataFrame()
+        }
+
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            if len(today_data):
+                # 半小时分隔
+                today_data = self.add_label(data=today_data)
+
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
+                use_len = 30
+                res = []
+                for i in range(1, len(today_data)):
+                    if today_data['label'].iloc[i] != today_data['label'].iloc[i - 1]:
+                        select_data = today_data[i - use_len: i]
+                        dt = today_data['datetime'].iloc[i - 15] - relativedelta(minutes=1)
+
+                        if len(select_data) < use_len:
+                            res.append(self._cal(pd.DataFrame()))
+                            res[-1]['datetime'] = dt
+                        else:
+                            res.append(self._cal(select_data))
+                            res[-1]['datetime'] = dt
+                res = pd.DataFrame(res)
+
+                for factor in _factor_dict.keys():
+
+                    if len(_factor_dict[factor]):
+                        _factor_dict[factor] = _factor_dict[factor].merge(
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+                        )
+                    else:
+                        _factor_dict[factor] = \
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+
+        return _factor_dict
+
+    def _cal(self, x):
+        if not len(x):
+            return {
+                'v5_v20': None,
+                'v5_v30': None,
+                'v10_v30': None,
+                'std5_std20': None,
+                'std5_std30': None,
+                'std10_std30': None,
+            }
+        else:
+            x.reset_index(drop=True, inplace=True)
+
+            return {
+                'v5_v20': x[-5:]['volume'].sum() / x[-20:]['volume'].sum() if x[-20:]['volume'].sum() != 0 else 0,
+                'v5_v30': x[-5:]['volume'].sum() / x[-30:]['volume'].sum() if x[-30:]['volume'].sum() != 0 else 0,
+                'v10_v30': x[-10:]['volume'].sum() / x[-30:]['volume'].sum() if x[-30:]['volume'].sum() != 0 else 0,
+                'std5_std20': x[-5:]['rtn'].std(ddof=1) / x[-20:]['rtn'].std(ddof=1) if x[-20:]['rtn'].std(ddof=1) != 0 else 0,
+                'std5_std30': x[-5:]['rtn'].std(ddof=1) / x[-30:]['rtn'].std(ddof=1) if x[-30:]['rtn'].std(ddof=1) != 0 else 0,
+                'std10_std30': x[-10:]['rtn'].std(ddof=1) / x[-30:]['rtn'].std(ddof=1) if x[-30:]['rtn'].std(ddof=1) != 0 else 0,
+            }
+
+
 if __name__ == '__main__':
-    cal_factor = HFRtnMoment(
+    cal_factor = HFVolumeRatioFactor(
         factor_name='moment',
         begin_date='2011-01-01',
         end_date='2021-02-28',
         init_cash=1000000,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['L', 'M', 'C']],
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
     )
     cal_factor.test()
-
