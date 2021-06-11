@@ -36,7 +36,6 @@ def form_comm_data(comm, factor_dict):
     return sum_data
 
 
-
 if __name__ == '__main__':
     rtn_data = pd.read_csv(os.path.join(local_hf_factor_path, '15Thf_rtn.csv'))
     factor_dict = form_factor_data(factor_data_path=local_hf_factor_path)

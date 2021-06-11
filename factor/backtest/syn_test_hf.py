@@ -4,6 +4,7 @@ import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
 import numpy as np
+from multiprocessing import Pool
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
@@ -65,6 +66,18 @@ class HFSynTest(BackTest):
         model_st.fit(X=train_X, y=train_Y)
         pred_res = model_st.predict(X=[list(test_data[factors])])[0]
         return pred_res
+
+    @staticmethod
+    def mp_pred_rtn(comm, train_data, test_data):
+
+        factors = [i for i in train_data.columns if i != '15Tf_rtn']
+        train_X = train_data[factors]
+        train_Y = train_data['15Tf_rtn']
+        model_st = RandomForestRegressor(random_state=666)
+        model_st.fit(X=train_X, y=train_Y)
+
+        pred_res = model_st.predict(X=[list(test_data[factors])])[0]
+        return {'comm': comm, 'pred_res': pred_res}
 
     def _open_comm(self):
         """
@@ -201,10 +214,13 @@ class HFSynTest(BackTest):
 
         return factor_list
 
+
     def strategy_target_pos(self, now_dt):
         comm_factor = self.form_train_data(now_dt=now_dt)
         t_factor_list = self._t_factor_list(comm_factor)
         res_list = []
+
+        mp_data_set = []
         for comm in comm_factor.keys():
             t_comm_data = comm_factor[comm][['15Tf_rtn'] + t_factor_list][-1-self.train_data_len:]
             for col in [i for i in t_comm_data.columns if i != '15Tf_rtn']:
@@ -227,13 +243,35 @@ class HFSynTest(BackTest):
                 continue
             else:
 
-                pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
-                res_list.append(
+                # pred_res = self.pred_rtn(train_data=train_data, test_data=test_data)
+                # res_list.append(
+                #     {
+                #         'comm': comm,
+                #         'pred_res': pred_res
+                #     }
+                # )
+
+        # =========================================== MULTI PROCESS TEST ===============================================
+                mp_data_set.append(
                     {
                         'comm': comm,
-                        'pred_res': pred_res
+                        'train_data': train_data,
+                        'test_data': test_data
                     }
                 )
+
+        pool = Pool(processes=8)
+        jobs = []
+        for dataset in mp_data_set:
+            jobs.append(pool.apply_async(
+                self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+            )
+
+        pool.close()
+        pool.join()
+        res_list = [j.get() for j in jobs]
+        # =============================================================================================================
+
         res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
         signal = {
             self.exchange.contract_dict[res_df['comm'].iloc[0]].now_main_contract(
@@ -249,8 +287,10 @@ class HFSynTest(BackTest):
         BackTest._daily_process(self)
 
         if self.agent.earth_calender.now_date.strftime('%m') == '12':
+
             eq_df = syn_test.agent.recorder.equity_curve()
             eq_df.to_csv('%s_syn_eq.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
+
 
 
 if __name__ == '__main__':
