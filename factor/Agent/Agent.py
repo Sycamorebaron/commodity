@@ -2,6 +2,16 @@ from factor.Agent.Recorder import Recorder
 from factor.Agent.TradeCenter import TradeCenter
 from factor.Agent.EarthCalender import EarthCalender
 import string
+import time
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        end = time.time()
+        print(func.__name__, 'Timer', round(end-start, 4))
+        return res
+    return wrapper
 
 
 class Agent:

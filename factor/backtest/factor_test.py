@@ -130,7 +130,7 @@ class BackTest(MainTest):
                 field='close'
             )
             self.exchange.account.equity = self.exchange.account.cash
-            self.agent.recorder.record_trade(info=close_trade_info)
+            # self.agent.recorder.record_trade(info=close_trade_info)
 
         # 再开仓
         target_pos = self.strategy_target_pos(
@@ -146,12 +146,8 @@ class BackTest(MainTest):
         )
 
         # 记录交易
-        self.agent.recorder.record_trade(info=open_trade_info)
-        # print('-' * 25, 'after change position', '-' * 25)
-        # print('CASH', self.exchange.account.cash)
-        # print('position\n',self.exchange.account.position.holding_position)
-        # print('-' * 70)
-        # print('$' * 55)
+        # self.agent.recorder.record_trade(info=open_trade_info)
+
 
     def _termly_process_skip_rest(self, term_begin_time):
         """

@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
 import numpy as np
 from multiprocessing import Pool
-
+import time
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
@@ -13,7 +13,18 @@ from factor.backtest.factor_test import BackTest
 from utils.base_para import local_data_path, local_15t_factor_path, NORMAL_CONTRACT_INFO
 
 pd.set_option('expand_frame_repr', False)
-pd.set_option('display.max_rows', 200)
+# pd.set_option('display.max_rows', 200)
+
+
+
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        res = func(*args, **kwargs)
+        end = time.time()
+        print(func.__name__, 'Timer', round(end-start, 4))
+        return res
+    return wrapper
 
 
 class HFSynTest(BackTest):
@@ -25,6 +36,7 @@ class HFSynTest(BackTest):
             self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage
         )
         self.factor = self._load_factor(local_factor_data_path)
+        self.comm_factor_data = self.form_factor_data()  # 保存按照商品保存的因子值
         self.open_comm = []
         self.train_data_len = train_data_len
         self.factor_ic = {}  # 计算后保存，防止重复运算
@@ -69,14 +81,19 @@ class HFSynTest(BackTest):
 
     @staticmethod
     def mp_pred_rtn(comm, train_data, test_data):
-
         factors = [i for i in train_data.columns if i != '15Tf_rtn']
         train_X = train_data[factors]
         train_Y = train_data['15Tf_rtn']
         model_st = RandomForestRegressor(random_state=666)
         model_st.fit(X=train_X, y=train_Y)
 
-        pred_res = model_st.predict(X=[list(test_data[factors])])[0]
+        pred_res = model_st.predict(X=[list(test_data[factors])])
+        # print(train_data)
+        # print(test_data)
+        # print(pred_res)
+
+        pred_res = pred_res[0]
+
         return {'comm': comm, 'pred_res': pred_res}
 
     def _open_comm(self):
@@ -105,22 +122,15 @@ class HFSynTest(BackTest):
             factor_dict[f.split('.')[0]] = data
         return factor_dict
 
-    def form_train_data(self, now_dt) -> dict:
-        """
-        筛选时间
-        去掉夜盘：小时大于21 & 小时小于8
-        去掉休息时间：10：15-10：30
-
-        :param now_dt:
-        :return:
-        """
+    def form_factor_data(self):
+        print('REFROM FACTORS...')
         comm_factor = {}
-        for comm in self.open_comm:
+        for comm in self.exchange.contract_dict.keys():
+            print(comm)
             _comm_d = pd.DataFrame()
             for factor in self.factor.keys():
-                _comm_f = self.factor[factor].loc[self.factor[factor]['datetime'] <= now_dt, ['datetime', comm]].copy()
+                _comm_f = self.factor[factor][['datetime', comm]]
                 _comm_f.columns = ['datetime', factor]
-                _comm_f = _comm_f[-1000:].reset_index(drop=True)
                 if len(_comm_d):
                     _comm_d = _comm_d.merge(_comm_f, on='datetime', how='outer')
                 else:
@@ -134,8 +144,52 @@ class HFSynTest(BackTest):
             _comm_d.reset_index(drop=True, inplace=True)
             _comm_d['15Tf_rtn'] = _comm_d['15Thf_rtn'].shift(-1)
             comm_factor[comm] = _comm_d
+
         return comm_factor
 
+    def form_train_data(self, now_dt) -> dict:
+        """
+        筛选时间
+        去掉夜盘：小时大于21 & 小时小于8
+        去掉休息时间：10：15-10：30
+
+        :param now_dt:
+        :return:
+        """
+        comm_factor = {}
+        for comm in self.open_comm:
+            # _comm_d = pd.DataFrame()
+            # for factor in self.factor.keys():
+            #     print(comm, factor)
+            #     _comm_f = self.factor[factor].loc[self.factor[factor]['datetime'] <= now_dt, ['datetime', comm]]
+            #     _comm_f.columns = ['datetime', factor]
+            #     _comm_f = _comm_f[-300:].reset_index(drop=True)
+            #     if len(_comm_d):
+            #         _comm_d = _comm_d.merge(_comm_f, on='datetime', how='outer')
+            #     else:
+            #         _comm_d = _comm_f
+            #
+            # _comm_d.sort_values(by='datetime', ascending=True, inplace=True)
+            # cond1 = _comm_d['datetime'].dt.hour >= 9
+            # cond2 = _comm_d['datetime'].dt.hour <= 15
+            # _comm_d = _comm_d.loc[cond1 & cond2]
+            #
+            # _comm_d.reset_index(drop=True, inplace=True)
+            # _comm_d['15Tf_rtn'] = _comm_d['15Thf_rtn'].shift(-1)
+            #
+            # print(_comm_d)
+            # ============================================= 截取 =======================================================
+
+            t_comm_d = self.comm_factor_data[comm].loc[self.comm_factor_data[comm]['datetime'] <= now_dt]
+            t_comm_d = t_comm_d[-300:].reset_index(drop=True)
+            # print(comm, 'form train data')
+            # print(t_comm_d)
+            # =========================================================================================================
+            comm_factor[comm] = t_comm_d
+
+        return comm_factor
+
+    # @timer
     def _factor_exp_ic_dist(self, factor, factor_df):
         """
         计算因子的累计IC距离
@@ -214,12 +268,11 @@ class HFSynTest(BackTest):
 
         return factor_list
 
-
+    @timer
     def strategy_target_pos(self, now_dt):
         comm_factor = self.form_train_data(now_dt=now_dt)
         t_factor_list = self._t_factor_list(comm_factor)
-        res_list = []
-
+        # print('t_factor_list', t_factor_list)
         mp_data_set = []
         for comm in comm_factor.keys():
             t_comm_data = comm_factor[comm][['15Tf_rtn'] + t_factor_list][-1-self.train_data_len:]
@@ -230,13 +283,16 @@ class HFSynTest(BackTest):
             # train_data = t_comm_data[:-1]
             test_data = t_comm_data.iloc[-1]
 
+            # print('train_data', comm, train_data)
+            # print('test_data', comm, test_data)
             # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
             if np.isnan(test_data[1:]).any():
                 test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
-
-                t_comm_data = t_comm_data[['15Tf_rtn'] + [i for i in t_comm_data.columns if i not in test_miss_col]]
+                t_comm_data = t_comm_data[[i for i in t_comm_data.columns if i not in test_miss_col]]
                 train_data = t_comm_data[:-1].dropna(how='any')
                 test_data = t_comm_data.iloc[-1]
+
+            # print('_train_data', comm, train_data)
 
             if len(train_data.columns) <= 1 :
                 print(comm, 'pass')
@@ -252,6 +308,8 @@ class HFSynTest(BackTest):
                 # )
 
         # =========================================== MULTI PROCESS TEST ===============================================
+        #         print('__train_data', comm, train_data)
+
                 mp_data_set.append(
                     {
                         'comm': comm,
@@ -259,7 +317,6 @@ class HFSynTest(BackTest):
                         'test_data': test_data
                     }
                 )
-
         pool = Pool(processes=8)
         jobs = []
         for dataset in mp_data_set:
@@ -270,7 +327,8 @@ class HFSynTest(BackTest):
         pool.close()
         pool.join()
         res_list = [j.get() for j in jobs]
-        # =============================================================================================================
+        # ==============================================================================================================
+        # print(res_list)
 
         res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
         signal = {
@@ -279,7 +337,7 @@ class HFSynTest(BackTest):
             self.exchange.contract_dict[res_df['comm'].iloc[-1]].now_main_contract(
                 now_date=self.agent.earth_calender.now_date): 0.5
         }
-        print(signal)
+        print(now_dt, signal)
         return signal
 
     def _daily_process(self):
