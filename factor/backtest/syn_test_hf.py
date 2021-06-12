@@ -288,11 +288,12 @@ class HFSynTest(BackTest):
             # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
             if np.isnan(test_data[1:]).any():
                 test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
+                if '15Tf_rtn' in test_miss_col:
+                    test_miss_col.remove('15Tf_rtn')
+
                 t_comm_data = t_comm_data[[i for i in t_comm_data.columns if i not in test_miss_col]]
                 train_data = t_comm_data[:-1].dropna(how='any')
                 test_data = t_comm_data.iloc[-1]
-
-            # print('_train_data', comm, train_data)
 
             if len(train_data.columns) <= 1 :
                 print(comm, 'pass')
@@ -350,12 +351,118 @@ class HFSynTest(BackTest):
             eq_df.to_csv('%s_syn_eq.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
 
 
+class PureSignal(HFSynTest):
+
+    def __init__(
+        self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+        term, leverage, train_data_len
+    ):
+        HFSynTest.__init__(
+            self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+            term, leverage, train_data_len
+        )
+        self.signals = []
+
+    @timer
+    def strategy_target_pos(self, now_dt):
+        comm_factor = self.form_train_data(now_dt=now_dt)
+        t_factor_list = self._t_factor_list(comm_factor)
+        # print('t_factor_list', t_factor_list)
+        mp_data_set = []
+        for comm in comm_factor.keys():
+            t_comm_data = comm_factor[comm][['15Tf_rtn'] + t_factor_list][-1-self.train_data_len:]
+            for col in [i for i in t_comm_data.columns if i != '15Tf_rtn']:
+                t_comm_data[col] = (t_comm_data[col] - t_comm_data[col].mean()) / t_comm_data[col].std(ddof=1)
+
+            train_data = t_comm_data[:-1].dropna(how='any')
+            # train_data = t_comm_data[:-1]
+            test_data = t_comm_data.iloc[-1]
+
+            # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
+            if np.isnan(test_data[1:]).any():
+                test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
+                if '15Tf_rtn' in test_miss_col:
+                    test_miss_col.remove('15Tf_rtn')
+
+                t_comm_data = t_comm_data[[i for i in t_comm_data.columns if i not in test_miss_col]]
+                train_data = t_comm_data[:-1].dropna(how='any')
+                test_data = t_comm_data.iloc[-1]
+
+            if len(train_data.columns) <= 1 :
+                print(comm, 'pass')
+                continue
+            else:
+
+                mp_data_set.append(
+                    {
+                        'comm': comm,
+                        'train_data': train_data,
+                        'test_data': test_data
+                    }
+                )
+        pool = Pool(processes=8)
+        jobs = []
+        for dataset in mp_data_set:
+            jobs.append(pool.apply_async(
+                self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+            )
+
+        pool.close()
+        pool.join()
+        res_list = [j.get() for j in jobs]
+
+        self.signals.append(res_list)
+
+    def _daily_process(self):
+        self.open_comm = self._open_comm()
+
+        print(self.agent.earth_calender.now_date)
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+        # 逐期遍历
+        for term_begin_time in self.term_list:
+            self._termly_process(term_begin_time=term_begin_time)
+
+        print('*' * 30)
+        print('DATE', self.agent.earth_calender.now_date)
+        print('EQUITY', self.exchange.account.equity)
+        print('*' * 30)
+        print('=' * 50)
+
+
+        if self.agent.earth_calender.now_date.strftime('%m') == '12':
+            signal_df = pd.DataFrame(self.signals)
+            signal_df.to_csv('%s_signal_df.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
+
+    def _termly_process(self, term_begin_time):
+        """
+        每期进行的流程
+        :param term_begin_time:
+        :return:
+        """
+
+        # 再开仓
+        self.strategy_target_pos(
+            now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
+        )
+
 
 if __name__ == '__main__':
 
-    syn_test = HFSynTest(
+    syn_test = PureSignal(
         factor_name='hf_syn',
-        begin_date='2012-01-01',
+        begin_date='2012-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
         # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
