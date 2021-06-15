@@ -411,7 +411,11 @@ class PureSignal(HFSynTest):
         pool.join()
         res_list = [j.get() for j in jobs]
 
-        self.signals.append(res_list)
+        _p_res = {'now_dt': pd.to_datetime(now_dt) - relativedelta(minutes=1)}
+        for res in res_list:
+            _p_res[res['comm']] = res['pred_res']
+
+        self.signals.append(_p_res)
 
     def _daily_process(self):
         self.open_comm = self._open_comm()
@@ -440,8 +444,7 @@ class PureSignal(HFSynTest):
         print('*' * 30)
         print('=' * 50)
 
-
-        if self.agent.earth_calender.now_date.strftime('%m') == '12':
+        if self.agent.earth_calender.now_date.strftime('%m') == '02':
             signal_df = pd.DataFrame(self.signals)
             signal_df.to_csv('%s_signal_df.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
 
