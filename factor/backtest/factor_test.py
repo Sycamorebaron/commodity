@@ -284,16 +284,19 @@ class MomentumBackTest(BackTest):
             cal_factor_data = self._get_cal_factor_data(
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
             )
-
-            contract_factor_list.append(
-                {
-                    'contract': cal_factor_data['order_book_id'].iloc[0],
-                    'factor': cal_factor_data['close'].iloc[-1] / cal_factor_data['open'].iloc[0] - 1
-                }
-            )
-        contract_factor_df = \
-            pd.DataFrame(contract_factor_list).sort_values(by='factor', ascending=False).reset_index(drop=True)
+            if len(cal_factor_data):
+                contract_factor_list.append(
+                    {
+                        'contract': cal_factor_data['order_book_id'].iloc[0],
+                        'factor': cal_factor_data['close'].iloc[-1] / cal_factor_data['open'].iloc[0] - 1
+                    }
+                )
         signal_pos = {}
+
+        # 部分假期前是完全没有夜盘的
+        if len(contract_factor_list):
+            contract_factor_df = \
+                pd.DataFrame(contract_factor_list).sort_values(by='factor', ascending=False).reset_index(drop=True)
 
         # 已经弃用，在外部平仓
         # # 有持仓的合约仓位为0的平仓信号，否则trade中不会平仓！
@@ -305,9 +308,9 @@ class MomentumBackTest(BackTest):
         #             signal_pos[contract] = 0
 
         # 开仓信号
-        if contract_factor_df['factor'].iloc[0] - contract_factor_df['factor'].iloc[-1] > 0.04:
-            signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
-            signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
+            if contract_factor_df['factor'].iloc[0] - contract_factor_df['factor'].iloc[-1] > 0.04:
+                signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
+                signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
 
         return signal_pos
 
@@ -381,13 +384,13 @@ if __name__ == '__main__':
     back_test = MomentumBackTest(
         test_name='moment',
         begin_date='2015-01-01',
-        end_date='2021-02-28',
+        end_date='2019-02-28',
         init_cash=10000000,
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path,
         term='15T',
         leverage=False,
-        night=False
+        night=True
     )
     back_test.test()
     back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')
