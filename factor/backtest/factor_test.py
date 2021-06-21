@@ -10,9 +10,9 @@ from utils.base_para import *
 
 
 class BackTest(MainTest):
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
         MainTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage)
-        self.term_list = self._gen_term_list(term)
+        self.term_list = self._gen_term_list(term=term, night=night)
 
     def _last_dt(self, now_dt):
         """
@@ -52,32 +52,64 @@ class BackTest(MainTest):
         return cal_factor_data
 
     @staticmethod
-    def _gen_term_list(term):
-        begin_time = pd.to_datetime('2000-01-01 09:01')
-        end_time = pd.to_datetime('2000-01-01 15:00')
-        rest_time_begin_1 = pd.to_datetime('2000-01-01 10:15')
-        rest_time_end_1 = pd.to_datetime('2000-01-01 10:30')
-        rest_time_begin_2 = pd.to_datetime('2000-01-01 11:30')
-        rest_time_end_2 = pd.to_datetime('2000-01-01 13:30')
+    def _gen_term_list(term, night):
+        if not night:
+            begin_time = pd.to_datetime('2000-01-01 09:01')
+            end_time = pd.to_datetime('2000-01-01 15:00')
+            rest_time_begin_1 = pd.to_datetime('2000-01-01 10:15')
+            rest_time_end_1 = pd.to_datetime('2000-01-01 10:30')
+            rest_time_begin_2 = pd.to_datetime('2000-01-01 11:30')
+            rest_time_end_2 = pd.to_datetime('2000-01-01 13:30')
 
-        now_term_begin = begin_time
-        term_list = []
-        if term.endswith('T'):
-            while now_term_begin < end_time:
-                if (now_term_begin < rest_time_begin_1) or \
-                    ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
-                    (now_term_begin > rest_time_end_2):
-                    term_list.append(now_term_begin.strftime('%H:%M'))
-                now_term_begin += timedelta(minutes=int(term.strip('T')))
-        elif term.endswith('H'):
-            while now_term_begin < end_time:
-                if (now_term_begin < rest_time_begin_1) or \
-                    ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
-                    (now_term_begin > rest_time_end_2):
-                    term_list.append(now_term_begin.strftime('%H:%M'))
-                now_term_begin += timedelta(hours=int(term.strip('H')))
+            now_term_begin = begin_time
+            term_list = []
+            if term.endswith('T'):
+                while now_term_begin < end_time:
+                    if (now_term_begin < rest_time_begin_1) or \
+                        ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
+                        (now_term_begin > rest_time_end_2):
+                        term_list.append(now_term_begin.strftime('%H:%M'))
+                    now_term_begin += timedelta(minutes=int(term.strip('T')))
+            elif term.endswith('H'):
+                while now_term_begin < end_time:
+                    if (now_term_begin < rest_time_begin_1) or \
+                        ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
+                        (now_term_begin > rest_time_end_2):
+                        term_list.append(now_term_begin.strftime('%H:%M'))
+                    now_term_begin += timedelta(hours=int(term.strip('H')))
+            else:
+                raise Exception('TERM NOT SUPPORT')
         else:
-            raise Exception('TERM NOT SUPPORT')
+
+            begin_time = pd.to_datetime('2000-01-01 09:01')
+            end_time = pd.to_datetime('2000-01-01 23:00')
+            rest_time_begin_1 = pd.to_datetime('2000-01-01 10:15')
+            rest_time_end_1 = pd.to_datetime('2000-01-01 10:30')
+
+            rest_time_begin_2 = pd.to_datetime('2000-01-01 11:30')
+            rest_time_end_2 = pd.to_datetime('2000-01-01 13:30')
+
+            rest_time_begin_3 = pd.to_datetime('2000-01-01 15:00')
+            rest_time_end_3 = pd.to_datetime('2000-01-01 21:00')
+
+            now_term_begin = begin_time
+            term_list = []
+            if term.endswith('T'):
+                while now_term_begin < end_time:
+                    if (now_term_begin < rest_time_begin_1) or \
+                            ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
+                            (now_term_begin > rest_time_end_2) & (now_term_begin < rest_time_begin_3) or \
+                            (now_term_begin > rest_time_end_3):
+                        term_list.append(now_term_begin.strftime('%H:%M'))
+                    now_term_begin += timedelta(minutes=int(term.strip('T')))
+            elif term.endswith('H'):
+                while now_term_begin < end_time:
+                    if (now_term_begin < rest_time_begin_1) or \
+                            ((now_term_begin > rest_time_end_1) & (now_term_begin < rest_time_begin_2)) or \
+                            (now_term_begin > rest_time_end_2) & (now_term_begin < rest_time_begin_3) or \
+                            (now_term_begin > rest_time_end_3):
+                        term_list.append(now_term_begin.strftime('%H:%M'))
+                    now_term_begin += timedelta(hours=int(term.strip('H')))
 
         return term_list
 
@@ -176,7 +208,8 @@ class BackTest(MainTest):
             self.exchange.account.equity = self.exchange.account.cash
             self.agent.recorder.record_trade(info=close_trade_info)
 
-        if term_begin_time not in ['10:01', '10:31']:
+        # if term_begin_time not in ['10:01', '10:31']:
+        if term_begin_time not in ['09:01', '10:01', '10:16', '10:31', '13:01', '21:01']:
 
             # 再开仓
             target_pos = self.strategy_target_pos(
@@ -251,11 +284,11 @@ class MomentumBackTest(BackTest):
             cal_factor_data = self._get_cal_factor_data(
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
             )
-            cal_factor_data['rtn'] = cal_factor_data['close'] / cal_factor_data['open'] - 1
+
             contract_factor_list.append(
                 {
                     'contract': cal_factor_data['order_book_id'].iloc[0],
-                    'factor': cal_factor_data['rtn'].mean()
+                    'factor': cal_factor_data['close'].iloc[-1] / cal_factor_data['open'].iloc[0] - 1
                 }
             )
         contract_factor_df = \
@@ -272,9 +305,9 @@ class MomentumBackTest(BackTest):
         #             signal_pos[contract] = 0
 
         # 开仓信号
-
-        signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
-        signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
+        if contract_factor_df['factor'].iloc[0] - contract_factor_df['factor'].iloc[-1] > 0.04:
+            signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
+            signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
 
         return signal_pos
 
@@ -347,13 +380,14 @@ class R1DV0BackTest(BackTest):
 if __name__ == '__main__':
     back_test = MomentumBackTest(
         test_name='moment',
-        begin_date='2018-01-01',
+        begin_date='2015-01-01',
         end_date='2021-02-28',
         init_cash=10000000,
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path,
-        term='30T',
-        leverage=False
+        term='15T',
+        leverage=False,
+        night=False
     )
     back_test.test()
     back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')

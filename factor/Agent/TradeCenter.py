@@ -18,8 +18,10 @@ class TradeCenter:
             exchange.contract_dict[commodity].init_margin_rate * price * abs(num)
         # print('OPEN', now_dt, contract, num, price)
         exchange.account.cash -= (
-                open_margin + abs(num) * exchange.contract_dict[commodity].open_comm
+                open_margin + abs(num) * exchange.contract_dict[commodity].open_comm * price *
+                exchange.contract_dict[commodity].contract_unit
         )
+
         exchange.account.position.holding_position[commodity][contract] = {
             'open_date': now_dt,
             'use_margin': open_margin,
@@ -44,7 +46,10 @@ class TradeCenter:
             (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * num * \
             exchange.contract_dict[commodity].contract_unit
         # print('CLOSE', now_dt, contract, num, price)
-        exchange.account.cash += (today_profit + use_margin - abs(num) * exchange.contract_dict[commodity].close_comm)
+        exchange.account.cash += (
+            today_profit + use_margin - abs(num) * exchange.contract_dict[commodity].close_comm * price *
+            exchange.contract_dict[commodity].contract_unit
+        )
 
         exchange.account.position.drop(contract=contract)
 

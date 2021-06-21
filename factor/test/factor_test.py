@@ -1275,3 +1275,10 @@ class Others(FactorTest):
         today_data['move'] = today_data['close'] - today_data['open']
         vwap_move_pct = (today_data['move'] * today_data['volume']).sum() / today_data['volume'].sum() if today_data['volume'].sum() != 0 else 0
         return smart_money_vol_pct, cvar, vcvar, vwap_move_pct
+
+
+class PriceGap(FactorTest):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.FG_SA = []
+        self.Y_M = []

@@ -23,6 +23,7 @@ factor_list = [
     '15Tup_rtn_std', '15Tup_vol_pct', '15Tvbig_rtn_mean', '15Tvbig_rtn_vol', '15Tvbig_rv_corr', '15Tvol_oi'
 ]
 
+
 local_files = []
 for roots, dirs, files in os.walk(data_path):
     if files:
@@ -35,6 +36,7 @@ for factor in factor_list:
     for comm in local_files:
         print(comm)
         data = pd.read_csv(os.path.join(data_path, comm))
+
         data.sort_values(by='datetime', ascending=True, inplace=True)
         data.reset_index(drop=True, inplace=True)
 

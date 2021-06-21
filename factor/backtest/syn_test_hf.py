@@ -16,7 +16,6 @@ pd.set_option('expand_frame_repr', False)
 # pd.set_option('display.max_rows', 200)
 
 
-
 def timer(func):
     def wrapper(*args, **kwargs):
         start = time.time()
@@ -84,7 +83,8 @@ class HFSynTest(BackTest):
         factors = [i for i in train_data.columns if i != '15Tf_rtn']
         train_X = train_data[factors]
         train_Y = train_data['15Tf_rtn']
-        model_st = RandomForestRegressor(random_state=666)
+        # model_st = RandomForestRegressor(random_state=666)
+        model_st = RandomForestRegressor(random_state=666, max_features = 'sqrt')
         model_st.fit(X=train_X, y=train_Y)
 
         pred_res = model_st.predict(X=[list(test_data[factors])])
@@ -318,13 +318,12 @@ class HFSynTest(BackTest):
                         'test_data': test_data
                     }
                 )
-        pool = Pool(processes=8)
+        pool = Pool(processes=4)
         jobs = []
         for dataset in mp_data_set:
             jobs.append(pool.apply_async(
                 self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
             )
-
         pool.close()
         pool.join()
         res_list = [j.get() for j in jobs]
@@ -403,9 +402,11 @@ class PureSignal(HFSynTest):
         pool = Pool(processes=8)
         jobs = []
         for dataset in mp_data_set:
-            jobs.append(pool.apply_async(
-                self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
-            )
+            if len(dataset['train_data']) != 0:
+
+                jobs.append(pool.apply_async(
+                    self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+                )
 
         pool.close()
         pool.join()
@@ -465,7 +466,7 @@ if __name__ == '__main__':
 
     syn_test = PureSignal(
         factor_name='hf_syn',
-        begin_date='2012-02-01',
+        begin_date='2014-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
         # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
@@ -474,7 +475,7 @@ if __name__ == '__main__':
         local_data_path=local_data_path,
         term='15T',
         leverage=False,
-        train_data_len=200
+        train_data_len=100
     )
     syn_test.test()
     t_eq_df = syn_test.agent.recorder.equity_curve()

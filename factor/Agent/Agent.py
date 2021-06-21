@@ -50,6 +50,7 @@ class Agent:
 
             target_num[contract] = int(now_equity * target_pos[contract] / contract_init_margin)
 
+        print('=' * 10, now_dt, target_num, '=' * 10)
         trade_info = self.trade_center.trade(
             exchange=exchange,
             target_num=target_num,

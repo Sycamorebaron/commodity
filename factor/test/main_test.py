@@ -6,7 +6,9 @@ import os
 
 
 class MainTest:
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage=True):
+    def __init__(
+        self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage=True
+    ):
         self.test_name = test_name
         self._begin_date = begin_date
         self.end_date = end_date
@@ -43,7 +45,7 @@ class MainTest:
                 exchange=self.exchange,
                 now_operate_contract=now_operate_contract,
                 new_operate_contract=new_operate_contract,
-                now_date=self.agent.earth_calender.now_date
+                now_dt=self.agent.earth_calender.now_date
             )
 
         # 根据策略计算目标仓位
@@ -56,6 +58,7 @@ class MainTest:
         trade_info = self.agent.change_position(
             exchange=self.exchange,
             target_pos=target_pos,
+            now_dt=self.agent.earth_calender.now_date
         )
         # 记录交易
         self.agent.recorder.record_trade(info=trade_info)
@@ -97,4 +100,3 @@ class MainTest:
 
         self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
         self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))
-
