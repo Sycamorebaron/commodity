@@ -6,6 +6,7 @@ from dateutil.relativedelta import relativedelta
 import numpy as np
 from multiprocessing import Pool
 import time
+import xgboost as xgb
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
@@ -79,22 +80,31 @@ class HFSynTest(BackTest):
         return pred_res
 
     @staticmethod
-    def mp_pred_rtn(comm, train_data, test_data):
+    def mp_pred_rtn_RF(comm, train_data, test_data):
         factors = [i for i in train_data.columns if i != '15Tf_rtn']
         train_X = train_data[factors]
         train_Y = train_data['15Tf_rtn']
-        # model_st = RandomForestRegressor(random_state=666)
         model_st = RandomForestRegressor(random_state=666, max_features = 'sqrt')
         model_st.fit(X=train_X, y=train_Y)
 
         pred_res = model_st.predict(X=[list(test_data[factors])])
-        # print(train_data)
-        # print(test_data)
-        # print(pred_res)
+        pred_res = pred_res[0]
+
+        return {'comm': comm, 'pred_res': pred_res}
+
+    def mp_pred_rtn_xgboost(self, comm, train_data, test_data):
+        factors = [i for i in train_data.columns if i != '15Tf_rtn']
+        train_X = train_data[factors].reset_index(drop=True)
+        train_Y = train_data['15Tf_rtn'].reset_index(drop=True)
+        model = xgb.XGBRegressor(n_estimators=7, objective='reg:squarederror')
+
+        model.fit(X=train_X, y=train_Y)
+        pred_res = model.predict(X=pd.DataFrame(test_data[factors]).T.reset_index(drop=True))
 
         pred_res = pred_res[0]
 
         return {'comm': comm, 'pred_res': pred_res}
+
 
     def _open_comm(self):
         """
@@ -321,8 +331,9 @@ class HFSynTest(BackTest):
         pool = Pool(processes=4)
         jobs = []
         for dataset in mp_data_set:
+
             jobs.append(pool.apply_async(
-                self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+                self.mp_pred_rtn_RF, (dataset['comm'], dataset['train_data'], dataset['test_data']))
             )
         pool.close()
         pool.join()
@@ -402,10 +413,11 @@ class PureSignal(HFSynTest):
         pool = Pool(processes=8)
         jobs = []
         for dataset in mp_data_set:
+            self.mp_pred_rtn_xgboost(dataset['comm'], dataset['train_data'], dataset['test_data'])
+            exit()
             if len(dataset['train_data']) != 0:
-
                 jobs.append(pool.apply_async(
-                    self.mp_pred_rtn, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+                    self.mp_pred_rtn_xgboost, (dataset['comm'], dataset['train_data'], dataset['test_data']))
                 )
 
         pool.close()
@@ -469,8 +481,8 @@ if __name__ == '__main__':
         begin_date='2011-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        contract_list=NORMAL_CONTRACT_INFO,
+        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        # contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
