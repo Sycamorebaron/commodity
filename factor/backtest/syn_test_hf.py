@@ -413,11 +413,10 @@ class PureSignal(HFSynTest):
         pool = Pool(processes=8)
         jobs = []
         for dataset in mp_data_set:
-            self.mp_pred_rtn_xgboost(dataset['comm'], dataset['train_data'], dataset['test_data'])
-            exit()
+
             if len(dataset['train_data']) != 0:
                 jobs.append(pool.apply_async(
-                    self.mp_pred_rtn_xgboost, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+                    self.mp_pred_rtn_RF, (dataset['comm'], dataset['train_data'], dataset['test_data']))
                 )
 
         pool.close()
@@ -481,8 +480,8 @@ if __name__ == '__main__':
         begin_date='2011-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        # contract_list=NORMAL_CONTRACT_INFO,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
