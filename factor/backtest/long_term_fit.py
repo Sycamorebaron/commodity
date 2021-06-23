@@ -27,8 +27,31 @@ def timer(func):
 
 
 class LongTermTest(HFSynTest):
+    def __init__(
+        self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+        term, leverage, train_data_len
+    ):
+        HFSynTest.__init__(
+            self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+            term, leverage, train_data_len
+        )
+        self.use_factor_list = []
+
+    def _t_factor_list(self, comm_factor):
+        return self.use_factor_list
+
+
+    def update_use_factor_list(self):
+        self.use_factor_list = []
+
     def _daily_process(self):
-        pass
+
+        HFSynTest._daily_process(self)
+        self.update_use_factor_list()
+
+
+
+
 
     def _termly_process_skip_rest(self, term_begin_time):
         """
