@@ -466,7 +466,7 @@ if __name__ == '__main__':
 
     syn_test = PureSignal(
         factor_name='hf_syn',
-        begin_date='2011-02-01',
+        begin_date='2010-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
         # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],

@@ -12,6 +12,7 @@ from utils.base_para import *
 class BackTest(MainTest):
     def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
         MainTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage)
+        self.term = term
         self.term_list = self._gen_term_list(term=term, night=night)
 
     def _last_dt(self, now_dt):
@@ -199,17 +200,20 @@ class BackTest(MainTest):
             for contract in self.exchange.account.position.holding_position[comm].keys():
                 close_pos[contract] = 0
         if len(close_pos):
+            print('close', term_begin_time)
+            last_end_time = pd.to_datetime(self._last_dt(now_dt=term_begin_time)) + timedelta(minutes=int(self.term[:-1]) - 1)
+
             close_trade_info = self.agent.change_position(
                 exchange=self.exchange,
                 target_pos=close_pos,
                 now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time),
-                field='close'
+                field='close',
             )
             self.exchange.account.equity = self.exchange.account.cash
             self.agent.recorder.record_trade(info=close_trade_info)
 
         # if term_begin_time not in ['10:01', '10:31']:
-        if term_begin_time not in ['09:01', '10:01', '10:16', '10:31', '13:01', '21:01']:
+        if term_begin_time not in ['09:01', '09:16', '10:01', '10:16', '10:31', '13:01', '21:01']:
 
             # 再开仓
             target_pos = self.strategy_target_pos(
@@ -310,6 +314,8 @@ class MomentumBackTest(BackTest):
         # 开仓信号
             if contract_factor_df['factor'].iloc[0] - contract_factor_df['factor'].iloc[-1] > 0.04:
                 signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
+                # signal_pos[contract_factor_df['contract'].iloc[1]] = -0.2
+                # signal_pos[contract_factor_df['contract'].iloc[-2]] = 0.2
                 signal_pos[contract_factor_df['contract'].iloc[-1]] = 0.5
 
         return signal_pos
@@ -358,11 +364,13 @@ class R1DV0BackTest(BackTest):
                 (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
                 continue
 
+
             cal_factor_data = self._get_cal_factor_data(
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
             )
             cal_factor_data['rtn'] = cal_factor_data['close'] / cal_factor_data['open'] - 1
             cal_factor_data['dv'] = cal_factor_data['volume'] - cal_factor_data['volume'].shift(1)
+
             contract_factor_list.append(
                 {
                     'contract': cal_factor_data['order_book_id'].iloc[0],
@@ -374,8 +382,10 @@ class R1DV0BackTest(BackTest):
         signal_pos = {}
 
         # 开仓信号
-        signal_pos[contract_factor_df['contract'].iloc[0]] = 0.5
-        signal_pos[contract_factor_df['contract'].iloc[-1]] = -0.5
+        signal_pos[contract_factor_df['contract'].iloc[0]] = 0.3
+        signal_pos[contract_factor_df['contract'].iloc[1]] = 0.2
+        signal_pos[contract_factor_df['contract'].iloc[-2]] = -0.2
+        signal_pos[contract_factor_df['contract'].iloc[-1]] = -0.3
 
         return signal_pos
 
@@ -383,13 +393,13 @@ class R1DV0BackTest(BackTest):
 if __name__ == '__main__':
     back_test = MomentumBackTest(
         test_name='moment',
-        begin_date='2015-01-01',
-        end_date='2019-02-28',
+        begin_date='2015-05-01',
+        end_date='2019-12-31',
         init_cash=10000000,
         contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path,
         term='15T',
-        leverage=False,
+        leverage=True,
         night=True
     )
     back_test.test()

@@ -1,3 +1,5 @@
+import pandas as pd
+
 from factor.DataFetcher import ExcelDataFetcher
 from utils.base_para import *
 
@@ -135,6 +137,14 @@ class Contract:
 
         return df
 
+    def _get_tradable_time(self):
+        """
+        获得当前合约的可交易时间
+        :return:
+        """
+        t_data = self.data_dict[list(self.data_dict.keys())[0]][:1500]
+        return list(t_data['datetime'].apply(lambda x: x.strftime('%H:%M:%S')).drop_duplicates())
+
     def now_main_contract(self, now_date):
         """
         找当前主力合约
@@ -241,7 +251,13 @@ class Contract:
         if field == 'open':
             price = data.loc[data['datetime'] == pd.to_datetime(dt), field].values[0]
         elif field == 'close':
-            price = data.loc[data['datetime'].shift(-1) == pd.to_datetime(dt), field].values[0]
+            try:
+                price = data.loc[data['datetime'].shift(-1) == pd.to_datetime(dt), field].values[0]
+            except Exception as e:
+                # 只有出现当天无夜盘品种没法获取到平仓价时才会到达这里
+                # 因此，只要用当天15：00的价格平仓即可
+                last_tradable_time = '%s 15:00:00' % dt.split(' ')[0]
+                price = data.loc[data['datetime'] == pd.to_datetime(last_tradable_time), field].values[0]
         else:
             raise  Exception('WRONG FIELD')
 
@@ -275,7 +291,6 @@ class Contract:
         :param now_date:
         :return:
         """
-
         now_main_contract = self.now_main_contract(now_date=now_date)
 
         for contract in [now_main_contract]:
