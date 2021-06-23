@@ -3,8 +3,8 @@ import os
 import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
+from datetime import timedelta
 import numpy as np
-from multiprocessing import Pool
 import time
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
@@ -27,8 +27,49 @@ def timer(func):
 
 
 class LongTermTest(HFSynTest):
+    def __init__(
+            self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+            term, leverage, train_data_len
+    ):
+        HFSynTest.__init__(
+            self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+            term, leverage, train_data_len
+        )
+        self.use_factor_list = []
+        self.last_update_date = pd.DataFrame('2000-01-01')
+
+    def _t_factor_list(self, comm_factor):
+        return self.use_factor_list
+
+
+    def form_comm_factor(self, use_days=90):
+        comm_factor = {}
+        for comm in self.open_comm:
+            t_comm_d = self.comm_factor_data[comm].loc[
+                (self.comm_factor_data[comm]['datetime'] < self.agent.earth_calender.now_date) &
+                (self.comm_factor_data[comm]['datetime'] >=
+                 (self.agent.earth_calender.now_date - timedelta(days=use_days)))
+            ]
+            comm_factor[comm] = t_comm_d.reset_index(drop=True)
+            print(comm_factor)
+            exit()
+
+
+    def update_use_factor_list_if_must(self):
+        # 每30天更新一次
+        if self.agent.earth_calender.now_date - self.use_factor_list  > timedelta(days=30):
+            # 使用过去90天的数据更新
+            comm_factor = self.form_comm_factor(use_days=90)
+
+            self.last_update_date = self.agent.earth_calender.now_date
+        self.use_factor_list = []
+
+
     def _daily_process(self):
-        pass
+
+        HFSynTest._daily_process(self)
+        self.update_use_factor_list_if_must()
+
 
     def _termly_process_skip_rest(self, term_begin_time):
         """
@@ -36,11 +77,6 @@ class LongTermTest(HFSynTest):
         :param term_begin_time:
         :return:
         """
-        # print('$' * 25, term_begin_time, '$' * 25)
-        # print('-' * 25, 'before change position', '-' * 25)
-        # print('CASH', self.exchange.account.cash)
-        # print('position\n', self.exchange.account.position.holding_position)
-        # print('-' * 70)
 
         # 先平仓
         close_pos = {}
@@ -59,7 +95,6 @@ class LongTermTest(HFSynTest):
             self.exchange.account.equity = self.exchange.account.cash
             self.agent.recorder.record_trade(info=close_trade_info)
 
-        # if term_begin_time not in ['10:01', '10:31']:
         if term_begin_time not in ['09:01', '10:01', '10:16', '10:31', '13:01', '21:01']:
 
             # 再开仓
@@ -75,10 +110,22 @@ class LongTermTest(HFSynTest):
                 field='open'
             )
 
-            # 记录交易
-            self.agent.recorder.record_trade(info=open_trade_info)
-            # print('-' * 25, 'after change position', '-' * 25)
-            # print('CASH', self.exchange.account.cash)
-            # print('position\n',self.exchange.account.position.holding_position)
-            # print('-' * 70)
-            # print('$' * 55)
+
+if __name__ == '__main__':
+
+    syn_test = LongTermTest(
+        factor_name='hf_syn',
+        begin_date='2015-02-01',
+        end_date='2021-02-28',
+        init_cash=1000000,
+        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        # contract_list=NORMAL_CONTRACT_INFO,
+        local_factor_data_path=local_15t_factor_path,
+        local_data_path=local_data_path,
+        term='15T',
+        leverage=False,
+        train_data_len=100
+    )
+    syn_test.test()
+    t_eq_df = syn_test.agent.recorder.equity_curve()
+    t_eq_df.to_csv('syn_test_equity.csv')
