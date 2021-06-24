@@ -147,7 +147,7 @@ class HFSynTest(BackTest):
 
         return comm_factor
 
-    def form_train_data(self, now_dt) -> dict:
+    def form_train_data(self, now_dt, *kwargs) -> dict:
         """
         筛选时间
         去掉夜盘：小时大于21 & 小时小于8
