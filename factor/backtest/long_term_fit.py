@@ -1,6 +1,8 @@
 import sys
 import os
 import pandas as pd
+from multiprocessing import Pool
+
 from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
 from datetime import timedelta
@@ -36,11 +38,10 @@ class LongTermTest(HFSynTest):
             term, leverage, train_data_len
         )
         self.use_factor_list = []
-        self.last_update_date = pd.DataFrame('2000-01-01')
+        self.last_update_date = pd.to_datetime('2000-01-01')
 
     def _t_factor_list(self, comm_factor):
         return self.use_factor_list
-
 
     def form_comm_factor(self, use_days=90):
         comm_factor = {}
@@ -51,25 +52,51 @@ class LongTermTest(HFSynTest):
                  (self.agent.earth_calender.now_date - timedelta(days=use_days)))
             ]
             comm_factor[comm] = t_comm_d.reset_index(drop=True)
-            print(comm_factor)
-            exit()
+        return comm_factor
 
+    def long_term_update_factor_list(self, comm_factor):
+        """
+        选择累计IC距离前50%的因子
+        :param comm_factor:
+        :return:
+        """
+        factor_t_exp_ic_dist = {}
+
+        for factor in self.factor.keys():
+            factor_df = pd.DataFrame()
+            for comm in comm_factor:
+                comm_f_data = comm_factor[comm][['datetime', factor, '15Tf_rtn']]
+                comm_f_data.columns = ['datetime', comm, '%s_f_rtn' % comm]
+                if len(factor_df):
+                    factor_df = factor_df.merge(comm_f_data, on='datetime', how='outer')
+                else:
+                    factor_df = comm_f_data
+            factor_df = factor_df[-2-self.train_data_len: -1].copy().reset_index(drop=True)
+
+            factor_t_exp_ic_dist[factor] = self._factor_exp_ic_dist(factor=factor, factor_df=factor_df)
+
+        factor_t_exp_ic_dist_df = pd.DataFrame(factor_t_exp_ic_dist, index=['exp_ic_dist']).T
+
+        factor_list = list(factor_t_exp_ic_dist_df.loc[
+            factor_t_exp_ic_dist_df['exp_ic_dist'] >= factor_t_exp_ic_dist_df['exp_ic_dist'].median()
+        ].index)
+
+        return factor_list
 
     def update_use_factor_list_if_must(self):
         # 每30天更新一次
-        if self.agent.earth_calender.now_date - self.use_factor_list  > timedelta(days=30):
+        if (self.agent.earth_calender.now_date - self.last_update_date)  > timedelta(days=30):
             # 使用过去90天的数据更新
             comm_factor = self.form_comm_factor(use_days=90)
-
+            t_factor_list = self.long_term_update_factor_list(comm_factor=comm_factor)
             self.last_update_date = self.agent.earth_calender.now_date
-        self.use_factor_list = []
-
+            self.use_factor_list = t_factor_list
+            print('update factors: ', self.use_factor_list)
 
     def _daily_process(self):
-
-        HFSynTest._daily_process(self)
+        self.open_comm = self._open_comm()
         self.update_use_factor_list_if_must()
-
+        HFSynTest._daily_process(self)
 
     def _termly_process_skip_rest(self, term_begin_time):
         """
@@ -110,6 +137,68 @@ class LongTermTest(HFSynTest):
                 field='open'
             )
 
+    @timer
+    def strategy_target_pos(self, now_dt):
+        comm_factor = self.form_train_data(now_dt=now_dt)
+        t_factor_list = self._t_factor_list(comm_factor)
+        # print('t_factor_list', t_factor_list)
+        mp_data_set = []
+        for comm in comm_factor.keys():
+            t_comm_data = comm_factor[comm][['15Tf_rtn'] + t_factor_list][-1-self.train_data_len:]
+            for col in [i for i in t_comm_data.columns if i != '15Tf_rtn']:
+                t_comm_data[col] = (t_comm_data[col] - t_comm_data[col].mean()) / t_comm_data[col].std(ddof=1)
+
+            train_data = t_comm_data[:-1].dropna(how='any')
+            test_data = t_comm_data.iloc[-1]
+
+            # print('train_data', comm, train_data)
+            # print('test_data', comm, test_data)
+            # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
+            if np.isnan(test_data[1:]).any():
+                test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
+                if '15Tf_rtn' in test_miss_col:
+                    test_miss_col.remove('15Tf_rtn')
+
+                t_comm_data = t_comm_data[[i for i in t_comm_data.columns if i not in test_miss_col]]
+                train_data = t_comm_data[:-1].dropna(how='any')
+                test_data = t_comm_data.iloc[-1]
+
+            if len(train_data.columns) <= 1 :
+                print(comm, 'pass')
+                continue
+            else:
+                mp_data_set.append(
+                    {
+                        'comm': comm,
+                        'train_data': train_data,
+                        'test_data': test_data
+                    }
+                )
+        pool = Pool(processes=4)
+        jobs = []
+        for dataset in mp_data_set:
+
+            jobs.append(pool.apply_async(
+                self.mp_pred_rtn_xgboost, (dataset['comm'], dataset['train_data'], dataset['test_data']))
+            )
+        pool.close()
+        pool.join()
+        res_list = [j.get() for j in jobs]
+
+        res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
+        print(res_df)
+        if (res_df['pred_res'].iloc[-1] - res_df['pred_res'].iloc[0]) > 0.004:
+            signal = {
+                self.exchange.contract_dict[res_df['comm'].iloc[0]].now_main_contract(
+                    now_date=self.agent.earth_calender.now_date): -0.5,
+                self.exchange.contract_dict[res_df['comm'].iloc[-1]].now_main_contract(
+                    now_date=self.agent.earth_calender.now_date): 0.5
+            }
+        else:
+            signal = {}
+        print(now_dt, signal)
+        return signal
+
 
 if __name__ == '__main__':
 
@@ -118,12 +207,12 @@ if __name__ == '__main__':
         begin_date='2015-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        # contract_list=NORMAL_CONTRACT_INFO,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
-        leverage=False,
+        leverage=True,
         train_data_len=100
     )
     syn_test.test()

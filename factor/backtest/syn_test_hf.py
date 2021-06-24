@@ -257,11 +257,13 @@ class HFSynTest(BackTest):
         :return:
         """
         factor_t_exp_ic_dist = {}
+
         for factor in self.factor.keys():
             factor_df = pd.DataFrame()
             for comm in comm_factor:
                 comm_f_data = comm_factor[comm][['datetime', factor, '15Tf_rtn']]
                 comm_f_data.columns = ['datetime', comm, '%s_f_rtn' % comm]
+
                 if len(factor_df):
                     factor_df = factor_df.merge(comm_f_data, on='datetime', how='outer')
                 else:
