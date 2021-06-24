@@ -174,18 +174,27 @@ class LongTermTest(HFSynTest):
                         'test_data': test_data
                     }
                 )
-        pool = Pool(processes=4)
-        jobs = []
+        # -------------------------------------多进程------------------------------------------
+        # pool = Pool(processes=4)
+        # jobs = []
+        # for dataset in mp_data_set:
+        #     jobs.append(pool.apply_async(
+        #         self.mp_pred_rtn_xgboost, (dataset['comm'], dataset['train_data'], dataset['test_data'])
+        #     ))
+        # pool.close()
+        # pool.join()
+        # res_list = [j.get() for j in jobs]
+
+        # ------------------------------------------------------------------------------------
+
+        # -------------------------------------循环------------------------------------------
+        res_list = []
         for dataset in mp_data_set:
-            jobs.append(pool.apply_async(
-                self.mp_pred_rtn_xgboost, (dataset['comm'], dataset['train_data'], dataset['test_data'])
-            ))
-        pool.close()
-        pool.join()
-        res_list = [j.get() for j in jobs]
+            res_list.append(self.mp_pred_rtn_xgboost(dataset['comm'], dataset['train_data'], dataset['test_data']))
+
+        # -----------------------------------------------------------------------------------
 
         res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
-        print(res_df)
         if (res_df['pred_res'].iloc[-1] - res_df['pred_res'].iloc[0]) > 0.004:
             signal = {
                 self.exchange.contract_dict[res_df['comm'].iloc[0]].now_main_contract(
@@ -206,8 +215,8 @@ if __name__ == '__main__':
         begin_date='2015-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        # contract_list=NORMAL_CONTRACT_INFO,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
