@@ -99,12 +99,10 @@ class HFSynTest(BackTest):
         model = xgb.XGBRegressor(n_estimators=7, objective='reg:squarederror')
 
         model.fit(X=train_X, y=train_Y)
-        pred_res = model.predict(X=pd.DataFrame(test_data[factors]).T.reset_index(drop=True))
-
+        pred_res = model.predict(data=pd.DataFrame(test_data[factors]).T.reset_index(drop=True))
         pred_res = pred_res[0]
 
         return {'comm': comm, 'pred_res': pred_res}
-
 
     def _open_comm(self):
         """
