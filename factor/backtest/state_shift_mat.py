@@ -111,7 +111,7 @@ class StateShiftMat(HFSynTest):
         if self.agent.earth_calender.now_date.strftime('%m') == '12':
 
             res = json.dumps(self.state_shift_mat_list)
-            f = open('D:\commodity\data\state_shift_mat.json', 'w')
+            f = open('state_shift_mat.json', 'w')
             f.write(res)
             f.close()
 
@@ -134,6 +134,6 @@ if __name__ == '__main__':
     syn_test.test()
 
     res = json.dumps(syn_test.state_shift_mat_list)
-    f = open('D:\commodity\data\state_shift_mat.json', 'w')
+    f = open('state_shift_mat.json', 'w')
     f.write(res)
     f.close()
