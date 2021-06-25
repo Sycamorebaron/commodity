@@ -193,7 +193,6 @@ class LongTermTest(HFSynTest):
             res_list.append(self.mp_pred_rtn_xgboost(dataset['comm'], dataset['train_data'], dataset['test_data']))
 
         # -----------------------------------------------------------------------------------
-
         res_df = pd.DataFrame(res_list).sort_values(by='pred_res')
         if (res_df['pred_res'].iloc[-1] - res_df['pred_res'].iloc[0]) > 0.004:
             signal = {
@@ -221,7 +220,7 @@ if __name__ == '__main__':
         local_data_path=local_data_path,
         term='15T',
         leverage=True,
-        train_data_len=100
+        train_data_len=10
     )
     syn_test.test()
     t_eq_df = syn_test.agent.recorder.equity_curve()

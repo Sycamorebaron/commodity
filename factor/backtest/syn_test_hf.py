@@ -111,8 +111,9 @@ class HFSynTest(BackTest):
         """
         return [
             i for i in self.exchange.contract_dict.keys() if
-            self.exchange.contract_dict[i].first_listed_date <
-            self.agent.earth_calender.now_date - relativedelta(days=self.train_data_len)
+            (self.exchange.contract_dict[i].first_listed_date <
+            self.agent.earth_calender.now_date - relativedelta(days=self.train_data_len)) &
+            (self.exchange.contract_dict[i].last_de_listed_date > self.agent.earth_calender.now_date)
         ]
 
     @staticmethod
