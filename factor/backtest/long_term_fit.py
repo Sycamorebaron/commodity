@@ -83,12 +83,20 @@ class LongTermTest(HFSynTest):
 
         return factor_list
 
+    def long_term_update_factor_list_decorr(self, comm_factor):
+        for comm in comm_factor.keys():
+            print(comm_factor[comm])
+            print(self.agent.earth_calender.now_date)
+
+            exit()
+
+
     def update_use_factor_list_if_must(self):
         # 每30天更新一次
         if (self.agent.earth_calender.now_date - self.last_update_date)  > timedelta(days=30):
             # 使用过去90天的数据更新
             comm_factor = self.form_comm_factor(use_days=90)
-            t_factor_list = self.long_term_update_factor_list(comm_factor=comm_factor)
+            t_factor_list = self.long_term_update_factor_list_decorr(comm_factor=comm_factor)
             self.last_update_date = self.agent.earth_calender.now_date
             self.use_factor_list = t_factor_list
             print('update factors: ', self.use_factor_list)
@@ -151,8 +159,6 @@ class LongTermTest(HFSynTest):
             train_data = t_comm_data[:-1].dropna(how='any')
             test_data = t_comm_data.iloc[-1]
 
-            # print('train_data', comm, train_data)
-            # print('test_data', comm, test_data)
             # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
             if np.isnan(test_data[1:]).any():
                 test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
@@ -214,8 +220,8 @@ if __name__ == '__main__':
         begin_date='2015-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        contract_list=NORMAL_CONTRACT_INFO,
+        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
+        # contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',

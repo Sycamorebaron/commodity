@@ -28,7 +28,6 @@ class StateShiftMat(HFSynTest):
         self.train_data_len = train_data_len
         self.state_shift_mat_list = []
 
-
     def cal_state_shift_mat(self, comm, now_date, use_days=30):
         data = self.exchange.contract_dict[comm].data_dict[
             self.exchange.contract_dict[comm].operate_contract
@@ -85,6 +84,7 @@ class StateShiftMat(HFSynTest):
 
             self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
             self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            print(self.exchange.contract_dict[comm].data_dict)
             print(self.exchange.contract_dict[comm].operate_contract)
 
             for contract in self.exchange.contract_dict[comm].data_dict.keys():
@@ -120,11 +120,11 @@ if __name__ == '__main__':
 
     syn_test = StateShiftMat(
         factor_name='hf_syn',
-        begin_date='2011-06-11',
+        begin_date='2015-01-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        contract_list=NORMAL_CONTRACT_INFO,
+        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A', 'SM']],
+        # contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
