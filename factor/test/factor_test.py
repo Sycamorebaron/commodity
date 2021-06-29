@@ -1277,8 +1277,4 @@ class Others(FactorTest):
         return smart_money_vol_pct, cvar, vcvar, vwap_move_pct
 
 
-class PriceGap(FactorTest):
-    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
-        FactorTest.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
-        self.FG_SA = []
-        self.Y_M = []
+

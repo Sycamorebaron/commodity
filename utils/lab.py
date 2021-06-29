@@ -1,30 +1,46 @@
-import xgboost as xgb
 import pandas as pd
-from matplotlib import pyplot as plt
+import os
+
 pd.set_option('expand_frame_repr', False)
 
-data = pd.read_csv(r'/home/sycamore/2012_signal_df.csv')
-data = data[['PB', 'L', 'C', 'M', 'SR', 'A', 'AL', 'P', 'ZN', 'RU']][:230].copy()
-data['P'] *= 100
-train_data = data[:200].reset_index(drop=True)
-test_data = data[229:][['PB', 'L', 'C', 'M', 'SR', 'A', 'AL', 'P', 'ZN']].reset_index(drop=True)
+# data_path = r'D:\commodity\data\hf_ic_15t'
+#
+# files = []
+# for roots, dirs, files in os.walk(data_path):
+#     if files:
+#         break
+#
+# ic_df = pd.DataFrame()
+# for f in files:
+#     data = pd.read_csv(os.path.join(data_path, f))
+#     data = data[['datetime', 'ic']]
+#     data.columns = ['datetime', f.split('.')[0][3:-7]]
+#
+#     if len(ic_df):
+#         ic_df = ic_df.merge(data, on='datetime', how='outer')
+#     else:
+#         ic_df = data
+#
+# ic_df = ic_df[ic_df.columns[1:]]
+# corr_df = ic_df.corr(method='pearson')
+# corr_df.to_excel(r'C:\Users\sycam\Desktop\corr.xlsx', sheet_name='pearson')
+# # corr_df = ic_df.corr(method='spearman')
+# # corr_df.to_excel(r'C:\Users\sycam\Desktop\corr.xlsx', sheet_name='spearman')
 
-model = xgb.XGBRegressor(n_estimators=7, objective='reg:squarederror')
-model.fit(X=train_data[['PB', 'L', 'C', 'M', 'SR', 'A', 'AL', 'RU', 'ZN']], y=train_data['P'])
 
-pred_res = model.predict(X=test_data)
-print(pred_res)
-exit()
-real_res = pd.DataFrame(data[200:]['P'].reset_index(drop=True))
-real_res['pred'] = pd.DataFrame(pred_res)[0]
-plt.scatter(x=real_res['pred'], y=real_res['P'])
-plt.show()
+data = pd.read_excel(r'C:\Users\sycam\Desktop\工作簿1.xlsx')
 
-print(real_res)
+hexin = []
+jichu = []
+for i in range(len(data)):
 
-"""
-预测指标可以变
-涨跌超过千一的dummy，带正负
+    if type(data['核心池'].iloc[i]) == str:
+        hexin += data['核心池'].iloc[i].split('、')
+    if type(data['基础池'].iloc[i]) == str:
 
-"""
+        jichu += data['基础池'].iloc[i].split('、')
 
+hexin_df = pd.DataFrame({'1': hexin})
+jichu_df = pd.DataFrame({'1': jichu})
+hexin_df.to_excel(r'C:\Users\sycam\Desktop\核心.xlsx')
+jichu_df.to_excel(r'C:\Users\sycam\Desktop\基础.xlsx')

@@ -63,5 +63,6 @@ if __name__ == '__main__':
 
         comm_factor_data = comm_rtn_data.merge(comm_factor_data, on='datetime', how='outer')
         comm_factor_data.dropna(subset=list(comm_factor_data.columns)[2:], how='all', inplace=True)
-
+        comm_factor_data.sort_values(by='datetime', inplace=True)
+        comm_factor_data.reset_index(drop=True, inplace=True)
         comm_factor_data.to_csv(os.path.join(r'D:\commodity\data\hf_comm_factor_15t', '%s.csv' % commodity))

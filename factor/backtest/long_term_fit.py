@@ -2,7 +2,7 @@ import sys
 import os
 import pandas as pd
 from multiprocessing import Pool
-
+from sklearn import decomposition
 from sklearn.ensemble import RandomForestRegressor
 from dateutil.relativedelta import relativedelta
 from datetime import timedelta
@@ -15,7 +15,6 @@ from factor.backtest.syn_test_hf import HFSynTest
 from utils.base_para import local_data_path, local_15t_factor_path, NORMAL_CONTRACT_INFO
 
 pd.set_option('expand_frame_repr', False)
-# pd.set_option('display.max_rows', 200)
 
 
 def timer(func):
@@ -83,20 +82,12 @@ class LongTermTest(HFSynTest):
 
         return factor_list
 
-    def long_term_update_factor_list_decorr(self, comm_factor):
-        for comm in comm_factor.keys():
-            print(comm_factor[comm])
-            print(self.agent.earth_calender.now_date)
-
-            exit()
-
-
     def update_use_factor_list_if_must(self):
         # 每30天更新一次
         if (self.agent.earth_calender.now_date - self.last_update_date)  > timedelta(days=30):
             # 使用过去90天的数据更新
             comm_factor = self.form_comm_factor(use_days=90)
-            t_factor_list = self.long_term_update_factor_list_decorr(comm_factor=comm_factor)
+            t_factor_list = self.long_term_update_factor_list(comm_factor=comm_factor)
             self.last_update_date = self.agent.earth_calender.now_date
             self.use_factor_list = t_factor_list
             print('update factors: ', self.use_factor_list)
@@ -213,21 +204,199 @@ class LongTermTest(HFSynTest):
         return signal
 
 
+class PCADeCorrLongTermTest(HFSynTest):
+    def __init__(
+            self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+            term, leverage, train_data_len
+    ):
+        HFSynTest.__init__(
+            self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
+            term, leverage, train_data_len
+        )
+        self.components = {}
+        self.last_update_date = pd.to_datetime('2000-01-01')
+        self.signals = []
+
+    def form_factor_data(self):
+        print('REFROM FACTORS...')
+        comm_factor = {}
+        for comm in self.exchange.contract_dict.keys():
+            print(comm)
+            _comm_d = pd.DataFrame()
+            for factor in self.factor.keys():
+                _comm_f = self.factor[factor][['datetime', comm]]
+                _comm_f.columns = ['datetime', factor]
+                if len(_comm_d):
+                    _comm_d = _comm_d.merge(_comm_f, on='datetime', how='outer')
+                else:
+                    _comm_d = _comm_f
+
+            _comm_d.sort_values(by='datetime', ascending=True, inplace=True)
+            cond1 = _comm_d['datetime'].dt.hour >= 9
+            cond2 = _comm_d['datetime'].dt.hour <= 15
+            _comm_d = _comm_d.loc[cond1 & cond2]
+
+            _comm_d.reset_index(drop=True, inplace=True)
+            _comm_d['15Tf_rtn'] = _comm_d['15Thf_rtn'].shift(-1)
+            _comm_d[[i for i in _comm_d.columns if i not in ['datetime', '15Tf_rtn']]] = \
+                _comm_d[[i for i in _comm_d.columns if i not in ['datetime', '15Tf_rtn']]].fillna(method='ffill')
+            comm_factor[comm] = _comm_d
+
+
+        return comm_factor
+
+    def renew_pca_components(self, comm_factor):
+        """
+        PCA对因子进行线性不相关处理
+        :param comm_factor:
+        :return:
+        """
+        print(comm_factor.keys())
+        comm_components = {}
+        for comm in comm_factor.keys():
+
+            print('renew component', comm)
+            d = comm_factor[comm]
+            d = d[[i for i in d.columns if i not in ['datetime', '15Tf_rtn']]].copy()
+
+            d.dropna(how='any', inplace=True)
+            d.reset_index(drop=True, inplace=True)
+
+            if len(d) < 100:
+                comm_components[comm] = []
+                print(comm)
+                continue
+            pca = decomposition.PCA()
+            pca.fit(d)
+
+            comm_components[comm] = [list(i) for i in pca.components_[:10]]
+            comm_components[comm] = pca.components_[:10]
+
+        self.components = comm_components
+
+    def form_comm_factor(self, use_days=90):
+        comm_factor = {}
+        for comm in self.open_comm:
+            t_comm_d = self.comm_factor_data[comm].loc[
+                (self.comm_factor_data[comm]['datetime'] < self.agent.earth_calender.now_date) &
+                (self.comm_factor_data[comm]['datetime'] >=
+                 (self.agent.earth_calender.now_date - timedelta(days=use_days)))
+            ]
+            comm_factor[comm] = t_comm_d.reset_index(drop=True)
+        return comm_factor
+
+    def update_use_factor_list_if_must(self):
+        # 每30天更新一次
+        if (self.agent.earth_calender.now_date - self.last_update_date)  > timedelta(days=7):
+            # 使用过去90天的数据更新
+            comm_factor = self.form_comm_factor(use_days=90)
+
+            self.renew_pca_components(comm_factor=comm_factor)
+
+            self.last_update_date = self.agent.earth_calender.now_date
+
+    @timer
+    def strategy_target_pos(self, now_dt):
+        comm_factor = self.form_train_data(now_dt=now_dt, rough_data_len=1000)
+        mp_data_set = []
+        for comm in comm_factor.keys():
+            if comm not in self.components.keys():
+                continue
+            t_comm_data = comm_factor[comm][-1-self.train_data_len:].copy().reset_index(drop=True)
+
+            t_comm_data[[i for i in t_comm_data if i not in ['datetime', '15Tf_rtn']]] = \
+                t_comm_data[[i for i in t_comm_data if i not in ['datetime', '15Tf_rtn']]].fillna(method='ffill')
+
+            for i in range(len(self.components[comm])):
+                c = t_comm_data[[
+                    i for i in t_comm_data if (i not in ['datetime', '15Tf_rtn']) & (not i.startswith('trans'))
+                ]].values.dot(self.components[comm][i].transpose())
+
+                t_comm_data['trans_%s' % i] = pd.DataFrame(c)[0]
+            # print(t_comm_data)
+            t_comm_data = t_comm_data[['trans_%s' % i for i in range(len(self.components[comm]))] + ['15Tf_rtn']]
+
+            train_data = t_comm_data[:-1]
+            test_data = t_comm_data.iloc[-1]
+
+            if len(train_data.columns) <= 1 :
+                # print(comm, 'pass')
+                continue
+            else:
+                mp_data_set.append(
+                    {
+                        'comm': comm,
+                        'train_data': train_data,
+                        'test_data': test_data
+                    }
+                )
+        res_list = []
+
+        for dataset in mp_data_set:
+            res_list.append(self.mp_pred_rtn_RF(dataset['comm'], dataset['train_data'], dataset['test_data']))
+
+        _p_res = {'now_dt': pd.to_datetime(now_dt) - relativedelta(minutes=1)}
+        for res in res_list:
+            _p_res[res['comm']] = res['pred_res']
+
+        self.signals.append(_p_res)
+
+    def _termly_process(self, term_begin_time):
+        """
+        每期进行的流程
+        :param term_begin_time:
+        :return:
+        """
+
+        # 再开仓
+        self.strategy_target_pos(
+            now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
+        )
+
+    def _daily_process(self):
+        self.open_comm = self._open_comm()
+        self.update_use_factor_list_if_must()
+        print(self.agent.earth_calender.now_date)
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+        # 逐期遍历
+        for term_begin_time in self.term_list:
+            self._termly_process(term_begin_time=term_begin_time)
+
+        print('*' * 30)
+        print('DATE', self.agent.earth_calender.now_date)
+        print('*' * 30)
+        print('=' * 50)
+
+        if self.agent.earth_calender.now_date.strftime('%m') == '02':
+            signal_df = pd.DataFrame(self.signals)
+            signal_df.to_csv('%s_pca_signal_df.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
+
+
 if __name__ == '__main__':
 
-    syn_test = LongTermTest(
+    syn_test = PCADeCorrLongTermTest(
         factor_name='hf_syn',
         begin_date='2015-02-01',
         end_date='2021-02-28',
         init_cash=1000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'L', 'C', 'M', 'RU', 'SR', 'A']],
-        # contract_list=NORMAL_CONTRACT_INFO,
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'A']],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_factor_data_path=local_15t_factor_path,
         local_data_path=local_data_path,
         term='15T',
         leverage=True,
-        train_data_len=10
+        train_data_len=100
     )
     syn_test.test()
-    t_eq_df = syn_test.agent.recorder.equity_curve()
-    t_eq_df.to_csv('syn_test_equity.csv')

@@ -84,6 +84,7 @@ class HFSynTest(BackTest):
         factors = [i for i in train_data.columns if i != '15Tf_rtn']
         train_X = train_data[factors]
         train_Y = train_data['15Tf_rtn']
+
         model_st = RandomForestRegressor(random_state=666, max_features = 'sqrt')
         model_st.fit(X=train_X, y=train_Y)
 
@@ -93,6 +94,8 @@ class HFSynTest(BackTest):
         return {'comm': comm, 'pred_res': pred_res}
 
     def mp_pred_rtn_xgboost(self, comm, train_data, test_data):
+        print(test_data)
+        exit()
         factors = [i for i in train_data.columns if i != '15Tf_rtn']
         train_X = train_data[factors].reset_index(drop=True)
         train_Y = train_data['15Tf_rtn'].reset_index(drop=True)
@@ -156,7 +159,7 @@ class HFSynTest(BackTest):
 
         return comm_factor
 
-    def form_train_data(self, now_dt) -> dict:
+    def form_train_data(self, now_dt, rough_data_len=300) -> dict:
         """
         筛选时间
         去掉夜盘：小时大于21 & 小时小于8
@@ -190,7 +193,7 @@ class HFSynTest(BackTest):
             # ============================================= 截取 =======================================================
 
             t_comm_d = self.comm_factor_data[comm].loc[self.comm_factor_data[comm]['datetime'] <= now_dt]
-            t_comm_d = t_comm_d[-300:].reset_index(drop=True)
+            t_comm_d = t_comm_d[-rough_data_len:].reset_index(drop=True)
             # print(comm, 'form train data')
             # print(t_comm_d)
             # =========================================================================================================
