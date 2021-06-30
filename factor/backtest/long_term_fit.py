@@ -267,7 +267,12 @@ class PCADeCorrLongTermTest(HFSynTest):
                 print(comm)
                 continue
             pca = decomposition.PCA()
-            pca.fit(d)
+            try:
+                pca.fit(d)
+            except Exception as e:
+                print(e)
+                print(comm, 'PASS in PCA')
+                continue
 
             comm_components[comm] = [list(i) for i in pca.components_[:10]]
             comm_components[comm] = pca.components_[:10]
@@ -313,7 +318,7 @@ class PCADeCorrLongTermTest(HFSynTest):
                 ]].values.dot(self.components[comm][i].transpose())
 
                 t_comm_data['trans_%s' % i] = pd.DataFrame(c)[0]
-            # print(t_comm_data)
+
             t_comm_data = t_comm_data[['trans_%s' % i for i in range(len(self.components[comm]))] + ['15Tf_rtn']]
 
             train_data = t_comm_data[:-1]
@@ -333,7 +338,12 @@ class PCADeCorrLongTermTest(HFSynTest):
         res_list = []
 
         for dataset in mp_data_set:
-            res_list.append(self.mp_pred_rtn_RF(dataset['comm'], dataset['train_data'], dataset['test_data']))
+            try:
+                res_list.append(self.mp_pred_rtn_RF(dataset['comm'], dataset['train_data'], dataset['test_data']))
+            except Exception as e:
+                print(dataset['comm'], 'PASS')
+                print(e)
+                continue
 
         _p_res = {'now_dt': pd.to_datetime(now_dt) - relativedelta(minutes=1)}
         for res in res_list:
@@ -388,7 +398,7 @@ if __name__ == '__main__':
 
     syn_test = PCADeCorrLongTermTest(
         factor_name='hf_syn',
-        begin_date='2015-02-01',
+        begin_date='2015-05-10',
         end_date='2021-02-28',
         init_cash=1000000,
         # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] in ['PB', 'A']],

@@ -82,7 +82,7 @@ class HFRtn(HFFactor):
             )
 
             if len(today_data):
-                data_30t = self.resample(today_data.copy(), rule='15T')
+                data_30t = self.resample(today_data.copy(), rule='5T')
                 data_30t['rtn'] = (data_30t['close'] / data_30t['open']) - 1
                 data_30t = data_30t[['datetime', 'rtn']]
                 data_30t.columns = ['datetime', comm]
