@@ -1063,7 +1063,8 @@ class Liquidity(FactorTest):
         self.pastor_gamma.append(tem_pastor_gamma)
 
         if (int(self.agent.earth_calender.now_date.strftime('%m')) >= 12) & (
-                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25):
+                int(self.agent.earth_calender.now_date.strftime('%d')) >= 25
+        ):
             amihud = pd.DataFrame(self.amihud)
             roll_spread = pd.DataFrame(self.roll_spread)
             LOT = pd.DataFrame(self.LOT)

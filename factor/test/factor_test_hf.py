@@ -94,6 +94,75 @@ class HFRtn(HFFactor):
         return _rtn_df
 
 
+class HFMaxMinRtn(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.max_rtn = []
+        self.min_rtn = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.max_rtn.append(t_factor_dict['max_rtn'])
+        self.min_rtn.append(t_factor_dict['min_rtn'])
+
+    def t_daily_factor(self, open_comm_list):
+
+        _factor_dict = {
+            'max_rtn': pd.DataFrame(),
+            'min_rtn': pd.DataFrame(),
+        }
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            if len(today_data):
+
+                today_data = self.add_label(data=today_data)
+
+                res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
+                res['max_rtn'] = res[0].apply(lambda x: x['max_rtn'])
+                res['min_rtn'] = res[0].apply(lambda x: x['min_rtn'])
+
+                res['datetime'] = res.index
+
+                for factor in _factor_dict.keys():
+
+                    if len(_factor_dict[factor]):
+                        _factor_dict[factor] = _factor_dict[factor].merge(
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+                        )
+                    else:
+                        _factor_dict[factor] = \
+                            res[['datetime', factor]].rename({factor: comm}, axis=1).reset_index(drop=True)
+        return _factor_dict
+
+    def _cal(self, x):
+        return {
+            'max_rtn': x['high'].max() / x['open'].iloc[0] - 1,
+            'min_rtn': x['low'].min() / x['open'].iloc[0] - 1,
+        }
+
+
 class HFRtnMoment(HFFactor):
     def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
         HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
@@ -1292,8 +1361,9 @@ class HFLeverageEffect(HFFactor):
                 'std_rtn': x['rtn'].corr(x['std']),
             }
 
+
 if __name__ == '__main__':
-    cal_factor = HFLeverageEffect(
+    cal_factor = HFMaxMinRtn(
         factor_name='moment',
         begin_date='2011-01-01',
         end_date='2021-02-28',
