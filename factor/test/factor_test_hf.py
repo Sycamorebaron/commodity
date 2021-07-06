@@ -36,6 +36,7 @@ class HFFactor(FactorTest):
             # lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '31']) else None
             lambda x: x - relativedelta(minutes=1) if (x.strftime('%M') in ['01', '16', '31', '46']) else None
 
+
         )
         data['label'].fillna(method='ffill', inplace=True)
         return data
