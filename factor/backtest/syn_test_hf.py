@@ -361,7 +361,7 @@ class HFSynTest(BackTest):
 
         if self.agent.earth_calender.now_date.strftime('%m') == '12':
 
-            eq_df = syn_test.agent.recorder.equity_curve()
+            eq_df = self.agent.recorder.equity_curve()
             eq_df.to_csv('%s_syn_eq.csv' % self.agent.earth_calender.now_date.strftime('%Y'))
 
 

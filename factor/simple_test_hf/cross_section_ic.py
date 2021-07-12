@@ -21,8 +21,9 @@ factor_list = [
     # '15TP2V0', '15TP3V0', '15Tpastor_gamma', '15TR0DV1', '15TR0DV2', '15TR0DV3', '15TR1DV0', '15TR2DV0', '15TR3DV0',
     # '15Trange_pct', '15Troll_spread', '15Tskew', '15Tstd', '15Ttrend_ratio', '15Tup_move_vol_pct', '15Tup_rtn_mean',
     # '15Tup_rtn_std', '15Tup_vol_pct', '15Tvbig_rtn_mean', '15Tvbig_rtn_vol', '15Tvbig_rv_corr', '15Tvol_oi',
-    '15Tv10_v30', '15Tv5_v20', '15Tv5_v30', '15Tstd10_std30', '15Tstd5_std20', '15Tstd5_std30', '15TBV_rtn',
-    '15Tstd_rtn'
+    # '15Tv10_v30', '15Tv5_v20', '15Tv5_v30', '15Tstd10_std30', '15Tstd5_std20', '15Tstd5_std30', '15TBV_rtn',
+    # '15Tstd_rtn'
+    '15Tdoi_rtn_corr'
 ]
 
 
@@ -56,6 +57,13 @@ for factor in factor_list:
     factor_sum_data.sort_values(by='datetime', ascending=True, inplace=True)
     factor_sum_data.reset_index(drop=True, inplace=True)
 
+    # =================================
+    # target_comm = ['A', 'AG', 'AL', 'AP', 'CJ', 'CU', 'J', 'JD', 'L', 'MA', 'NI', 'OI', 'PP', 'RM', 'SM', 'SN', 'SR', 'ZN']
+    # factor_sum_data = factor_sum_data[
+    #     ['datetime'] + [i for i in factor_sum_data.columns if i in target_comm or i.split('_')[0] in target_comm]
+    # ]
+    # =================================
+
     for i in range(len(factor_sum_data) - 1):
         dt = factor_sum_data['datetime'].iloc[i]
         print(dt)
@@ -86,4 +94,6 @@ for factor in factor_list:
             )
     factor_ic_df = pd.DataFrame(factor_ic)
     factor_ic_df['%s_expanding_ic' % factor] = factor_ic_df['ic'].expanding().sum()
-    factor_ic_df.to_csv(os.path.join(r'D:\commodity\data\hf_ic_15t', '%s_detail.csv' % factor))
+    factor_ic_df.to_csv(os.path.join(r'C:\Users\sycam\Desktop', 'all_%s_detail.csv' % factor))
+    exit()
+    # factor_ic_df.to_csv(os.path.join(r'D:\commodity\data\hf_ic_15t', '%s_detail.csv' % factor))

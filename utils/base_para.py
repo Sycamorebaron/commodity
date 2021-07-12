@@ -10,12 +10,14 @@ if system.startswith('win'):
     local_factor_data_path = r'C:\futures_factor'
     local_hf_factor_path = r'C:\30t_factor'
     local_15t_factor_path = r'C:\15t_factor'
+    local_5t_factor_path = r'C:\5t_factor'
 elif system.startswith('linux'):
     local_data_path = r'/home/sycamore/futures_data'
     local_data_path_5T = r'/home/sycamore/futures_data_5T'
     local_factor_data_path = r'/home/sycamore/futures_factor_1T'
     local_hf_factor_path = r'/home/sycamore/30t_factor'
     local_15t_factor_path = r'/home/sycamore/15t_factor'
+    local_5t_factor_path = r'/home/sycamore/5t_factor'
 else:
     local_data_path = ''
 

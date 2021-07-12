@@ -37,7 +37,8 @@ def get_factor(comm, local_factor_data_path, begin_date, end_date):
     _comm_d = _comm_d.loc[cond1 & cond2]
 
     _comm_d.reset_index(drop=True, inplace=True)
-    _comm_d['15Tf_rtn'] = _comm_d['15Thf_rtn'].shift(-1)
+
+    _comm_d['15Tf_rtn'] = _comm_d['15Tmin_rtn'].shift(-1)
     cond1 = _comm_d['datetime'] >= pd.to_datetime(begin_date)
     cond2 = _comm_d['datetime'] <= pd.to_datetime(end_date)
     _comm_d = _comm_d.loc[cond1 & cond2].reset_index(drop=True)
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     full_train_data = drop_invalid(data=full_train_data)
     full_train_data = kmeans_fillna(data=full_train_data)
 
-    full_test_data = get_factor(l_comm, l_local_factor_data_path, begin_date='2021-01-05', end_date='2021-02-05')
+    full_test_data = get_factor(l_comm, l_local_factor_data_path, begin_date='2021-01-05', end_date='2021-03-05')
     full_test_data = drop_invalid(data=full_test_data)
     full_test_data = kmeans_fillna(data=full_test_data)
 
@@ -126,11 +127,12 @@ if __name__ == '__main__':
     train_data = full_train_data[factor_list + ['15Tf_rtn']].copy()
     test_data = full_test_data[factor_list + ['15Tf_rtn']].copy()
 
+
     train_data, test_data = modify_data(train_data=train_data, test_data=test_data)
 
     remodel = hmm.GaussianHMM(n_components=10, covariance_type="full", n_iter=100)
     remodel.fit(train_data[[i for i in train_data.columns if i not in ['datetime', '15Tf_rtn']]].copy())
-
+    print(remodel.monitor_.converged)
     train_data['pred'] = remodel.predict(train_data[[i for i in train_data.columns if i not in ['datetime', '15Tf_rtn']]])
 
         # plt.scatter(train_data['pred'], train_data['15Tf_rtn'])
@@ -145,8 +147,7 @@ if __name__ == '__main__':
 
     bar_res = []
     for i in list(train_data['pred'].drop_duplicates()):
-        if len(train_data.loc[train_data['pred'] == i]) > 10:
-
+        if len(train_data.loc[train_data['pred'] == i]) > 10:  # 如果太少就不要画了
             bar_res.append([i, train_data.loc[train_data['pred'] == i, '15Tf_rtn'].mean()])
         else:
             bar_res.append([i, 0])
