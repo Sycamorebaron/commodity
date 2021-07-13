@@ -16,8 +16,8 @@ def hf_volume_ratio(begin_date='2011-01-01', end_date='2021-02-28'):
         begin_date=begin_date,
         end_date=end_date,
         init_cash=1000000,
-        # contract_list=[x for x in NORMAL_CONTRACT_INFO if x['id'] == 'SA'],
-        contract_list=NORMAL_CONTRACT_INFO,
+        contract_list=[x for x in NORMAL_CONTRACT_INFO if x['id'] in ['SA', 'L', 'FG', 'AL', 'AG']],
+        # contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path
     )
     cal_factor.test()

@@ -18,8 +18,11 @@ def comm_data(data_dict, comm):
             d = d.merge(data, on='datetime', how='outer')
         else:
             d = data
+    d = d.sort_values(by='datetime', ascending=True)
+    d.reset_index(drop=True, inplace=True)
+    d = d.dropna(subset=[i for i in d.columns if i != 'datetime'], how='all')
+    d.set_index('datetime', inplace=True)
     d.to_csv(os.path.join(comm_data_path, '%s.csv' % comm))
-
 
 
 if __name__ == '__main__':
@@ -32,12 +35,11 @@ if __name__ == '__main__':
         data = pd.read_csv(os.path.join(factor_15t_path, f))
         data_dict[f] = data
 
-    for comm in ['L', 'C', 'M', 'RU', 'SR', 'A', 'AL', 'P',
-       'ZN', 'V', 'CF', 'RO', 'RB', 'ER', 'CU', 'AU', 'Y', 'TA', 'PB', 'J',
-       'ME', 'AG', 'OI', 'FG', 'RM', 'JM', 'TC', 'BU', 'I', 'JD', 'FB', 'PP',
-       'HC', 'MA', 'SF', 'SM', 'CS', 'SN', 'NI', 'ZC', 'CY', 'AP', 'SC', 'SP',
-       'EG', 'CJ', 'UR', 'NR', 'SS', 'EB', 'SA', 'PG', 'LU', 'PF', 'BC', 'LH',
-       'PK']:
+    for comm in [
+        'L', 'C', 'M', 'RU', 'SR', 'A', 'AL', 'P', 'ZN', 'V', 'CF', 'RO', 'RB', 'ER', 'CU', 'AU', 'Y', 'TA', 'PB', 'J',
+        'ME', 'AG', 'OI', 'FG', 'RM', 'JM', 'TC', 'BU', 'I', 'JD', 'FB', 'PP', 'HC', 'MA', 'SF', 'SM', 'CS', 'SN', 'NI',
+        'ZC', 'CY', 'AP', 'SC', 'SP', 'EG', 'CJ', 'UR', 'NR', 'SS', 'EB', 'SA', 'PG', 'LU', 'PF', 'BC', 'LH', 'PK'
+    ]:
         data = comm_data(
             data_dict=data_dict,
             comm=comm

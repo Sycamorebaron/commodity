@@ -434,7 +434,6 @@ class HFVolPrice(HFFactor):
                 today_data['dvol'] = today_data['volume'] - today_data['volume'].shift(1)
                 today_data['doi'] = today_data['open_interest'] - today_data['open_interest'].shift(1)
 
-
                 res = pd.DataFrame(today_data.groupby('label').apply(self._cal))
 
                 res['dvol_rtn_corr'] = res[0].apply(lambda x: x['dvol_rtn_corr'])
@@ -1213,6 +1212,7 @@ class HFVolumeRatioFactor(HFFactor):
             )
             _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
             today_data = self.trunc_data(_data)
+
             if len(today_data):
                 # 半小时分隔
                 today_data = self.add_label(data=today_data)
@@ -1260,12 +1260,18 @@ class HFVolumeRatioFactor(HFFactor):
             x.reset_index(drop=True, inplace=True)
 
             return {
-                'v5_v20': x[-5:]['volume'].sum() / x[-20:]['volume'].sum() if x[-20:]['volume'].sum() != 0 else 0,
-                'v5_v30': x[-5:]['volume'].sum() / x[-30:]['volume'].sum() if x[-30:]['volume'].sum() != 0 else 0,
-                'v10_v30': x[-10:]['volume'].sum() / x[-30:]['volume'].sum() if x[-30:]['volume'].sum() != 0 else 0,
-                'std5_std20': x[-5:]['rtn'].std(ddof=1) / x[-20:]['rtn'].std(ddof=1) if x[-20:]['rtn'].std(ddof=1) != 0 else 0,
-                'std5_std30': x[-5:]['rtn'].std(ddof=1) / x[-30:]['rtn'].std(ddof=1) if x[-30:]['rtn'].std(ddof=1) != 0 else 0,
-                'std10_std30': x[-10:]['rtn'].std(ddof=1) / x[-30:]['rtn'].std(ddof=1) if x[-30:]['rtn'].std(ddof=1) != 0 else 0,
+                'v5_v20': x[-5:]['volume'].sum() / x[-20:]['volume'].sum()
+                if x[-20:]['volume'].sum() != 0 else 0,
+                'v5_v30': x[-5:]['volume'].sum() / x[-30:]['volume'].sum()
+                if x[-30:]['volume'].sum() != 0 else 0,
+                'v10_v30': x[-10:]['volume'].sum() / x[-30:]['volume'].sum()
+                if x[-30:]['volume'].sum() != 0 else 0,
+                'std5_std20': x[-5:]['rtn'].std(ddof=1) / x[-20:]['rtn'].std(ddof=1)
+                if x[-20:]['rtn'].std(ddof=1) != 0 else 0,
+                'std5_std30': x[-5:]['rtn'].std(ddof=1) / x[-30:]['rtn'].std(ddof=1)
+                if x[-30:]['rtn'].std(ddof=1) != 0 else 0,
+                'std10_std30': x[-10:]['rtn'].std(ddof=1) / x[-30:]['rtn'].std(ddof=1)
+                if x[-30:]['rtn'].std(ddof=1) != 0 else 0,
             }
 
 
