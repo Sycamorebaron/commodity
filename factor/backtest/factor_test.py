@@ -2,6 +2,8 @@ import sys
 import os
 from datetime import timedelta
 
+import pandas as pd
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
@@ -42,6 +44,7 @@ class BackTest(MainTest):
         :param last_dt:
         :return:
         """
+
         now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
             now_date=self.agent.earth_calender.now_date
         )
@@ -199,6 +202,7 @@ class BackTest(MainTest):
         for comm in self.exchange.account.position.holding_position.keys():
             for contract in self.exchange.account.position.holding_position[comm].keys():
                 close_pos[contract] = 0
+
         if len(close_pos):
             print('close', term_begin_time)
             last_end_time = pd.to_datetime(self._last_dt(now_dt=term_begin_time)) + timedelta(minutes=int(self.term[:-1]) - 1)
@@ -213,7 +217,8 @@ class BackTest(MainTest):
             self.agent.recorder.record_trade(info=close_trade_info)
 
         # if term_begin_time not in ['10:01', '10:31']:
-        if term_begin_time not in ['09:01', '09:16', '10:01', '10:16', '10:31', '13:01', '21:01']:
+        # if term_begin_time not in ['09:01', '09:16', '10:01', '10:16', '10:31', '13:01', '21:01']:
+        if term_begin_time not in ['09:01', '10:16', '13:31', '21:01']:
 
             # 再开仓
             target_pos = self.strategy_target_pos(
@@ -311,7 +316,7 @@ class MomentumBackTest(BackTest):
         #         if (self.exchange.account.position.holding_position[comm] != {}) & (contract not in signal_pos.keys()):
         #             signal_pos[contract] = 0
 
-        # 开仓信号
+            # 开仓信号
             if contract_factor_df['factor'].iloc[0] - contract_factor_df['factor'].iloc[-1] > 0.04:
                 signal_pos[contract_factor_df['contract'].iloc[0]] = -0.5
                 # signal_pos[contract_factor_df['contract'].iloc[1]] = -0.2
@@ -390,18 +395,77 @@ class R1DV0BackTest(BackTest):
         return signal_pos
 
 
+class TimerFGBackTest(BackTest):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
+        BackTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night)
+        self.hist_rtn = []
+
+    def _get_cal_factor_data(self, comm, now_dt, last_dt):
+        op_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        d = self.exchange.contract_dict[comm].data_dict[op_contract].copy()
+        d = d.loc[d['datetime'] < now_dt][-15:].reset_index(drop=True)
+        rtn = d['close'].iloc[-1] / d['open'].iloc[0] - 1
+        self.hist_rtn.append(
+            {
+                'candle_begin_time': d['datetime'].iloc[0],
+                'contract': op_contract,
+                'rtn': rtn
+            }
+        )
+
+    def strategy_target_pos(self, now_dt):
+        signal_pos = {}
+        for comm in self.exchange.contract_dict.keys():
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
+                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
+                continue
+
+            self._get_cal_factor_data(
+                comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
+            )
+            segs = 10
+            if len(self.hist_rtn) < (segs * 30) + 1:
+                continue
+
+            hist_rtn_df = pd.DataFrame(self.hist_rtn)
+            last_rtn = self.hist_rtn[-1]['rtn']
+            seg_df = hist_rtn_df[:-1]
+
+
+            label = segs - 1
+
+            for i in range(segs):
+                if (last_rtn >= seg_df['rtn'].quantile(i / segs)) & (last_rtn < seg_df['rtn'].quantile((i + 1) / segs)):
+                    label = i
+                    break
+
+            if label == 0:
+                signal_pos = {hist_rtn_df['contract'].iloc[-1]: 0.9}
+            elif label == (segs - 1):
+                signal_pos = {hist_rtn_df['contract'].iloc[-1]: -0.9}
+
+        return signal_pos
+
+    def _termly_process(self, term_begin_time):
+        BackTest._termly_process_skip_rest(self, term_begin_time)
+        print('cumulated fee', self.agent.trade_center.cumulated_fee)
+
+
 if __name__ == '__main__':
-    back_test = MomentumBackTest(
+    back_test = TimerFGBackTest(
         test_name='moment',
-        begin_date='2015-05-01',
-        end_date='2019-12-31',
+        begin_date='2014-01-01',
+        end_date='2020-12-31',
         init_cash=10000000,
-        contract_list=NORMAL_CONTRACT_INFO,
+        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'FG'],
         local_data_path=local_data_path,
         term='15T',
-        leverage=True,
-        night=True
+        leverage=False,
+        night=False
     )
     back_test.test()
-    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')
+    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\reverse_fee.csv')
+    back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\reverse_trade_hist.csv')
     # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')

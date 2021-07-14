@@ -91,8 +91,8 @@ class Contract:
         self.contract_volume = self._fetch_volume()
         self.init_margin_rate = init_margin_rate
         self.contract_unit = contract_unit
-        self.open_comm = 0.001
-        self.close_comm = 0.001
+        self.open_comm = 0.000
+        self.close_comm = 0.000
 
     def _init_contract_volume(self):
         print('INIT CONTRACT VOLUME...')

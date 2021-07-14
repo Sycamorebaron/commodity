@@ -9,7 +9,7 @@ pd.set_option('expand_frame_repr', False)
 data = pd.read_csv(os.path.join(comm_data_path, '%s.csv' % typical_comm))
 data['datetime'] = pd.to_datetime(data['datetime'])
 
-chosen_factor = '15Thf_rtn'
+chosen_factor = '15Tdown_move_vol_pct'
 
 if chosen_factor not in  ['15Thf_rtn', '15Tlowest_rtn', '15Tmax_rtn']:
     data = data[['datetime', chosen_factor, '15Thf_rtn', '15Tlowest_rtn', '15Tmax_rtn']]

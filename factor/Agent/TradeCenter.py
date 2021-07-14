@@ -2,9 +2,10 @@ import string
 
 
 class TradeCenter:
+    def __init__(self):
+        self.cumulated_fee = 0
 
-    @staticmethod
-    def _open(exchange, contract, num, price, now_dt):
+    def _open(self, exchange, contract, num, price, now_dt):
         """
         纯开，equity和cash减掉开仓手续费（按张），记录开仓信息（时间，价格，数量），风险度在最外层更新，每日结算时更新renew_price
         :param exchange:
@@ -12,6 +13,11 @@ class TradeCenter:
         :param price:
         :return:
         """
+
+        # print('cash', exchange.account.cash)
+        # print('euquity', exchange.account.equity)
+        # print('position', exchange.account.position.holding_position)
+
         commodity = contract.strip('0123456789')
         open_margin = \
             exchange.contract_dict[commodity].contract_unit * \
@@ -29,10 +35,21 @@ class TradeCenter:
             'hold_price': price,  # 每日结算持仓均价
             'num': num,
             'pnl': 0,
+            'fee': abs(num) * exchange.contract_dict[commodity].open_comm * price *
+                exchange.contract_dict[commodity].contract_unit
         }
+        self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                              exchange.contract_dict[commodity].contract_unit
+        # print('open_margin', open_margin)
+        # print('fee', exchange.contract_dict[commodity].open_comm * price *
+        #         exchange.contract_dict[commodity].contract_unit)
+        # print('cash', exchange.account.cash)
+        # print('euquity', exchange.account.equity)
+        # print('position', exchange.account.position.holding_position)
+        # exit()
 
-    @staticmethod
-    def _close(exchange, contract, price, now_dt):
+
+    def _close(self, exchange, contract, price, now_dt):
         """
         纯平，平掉某个合约所有仓位，equity和cash减掉平仓手续费，去掉position，计算盈亏，风险度在最外层更新
         :param exchange:
@@ -45,16 +62,20 @@ class TradeCenter:
         today_profit = \
             (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * num * \
             exchange.contract_dict[commodity].contract_unit
-        # print('CLOSE', now_dt, contract, num, price)
+        print('CLOSE', now_dt, contract, num, exchange.account.position.holding_position[commodity][contract]['hold_price'], price)
+        print('PROFIT', (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * \
+            exchange.contract_dict[commodity].contract_unit)
+
         exchange.account.cash += (
             today_profit + use_margin - abs(num) * exchange.contract_dict[commodity].close_comm * price *
             exchange.contract_dict[commodity].contract_unit
         )
 
         exchange.account.position.drop(contract=contract)
+        self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].close_comm * price * \
+                              exchange.contract_dict[commodity].contract_unit
 
-    @staticmethod
-    def _inc(exchange, contract, num, price, now_dt):
+    def _inc(self, exchange, contract, num, price, now_dt):
         """
         加仓，含加多和加空
         :param exchange:
@@ -85,10 +106,13 @@ class TradeCenter:
             'hold_price': avg_price,  # 每日结算持仓均价
             'num': holding_num + num,
             'pnl': now_pnl,
+            'fee': abs(num) * exchange.contract_dict[commodity].open_comm * price *
+                   exchange.contract_dict[commodity].contract_unit
         }
+        self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                              exchange.contract_dict[commodity].contract_unit
 
-    @staticmethod
-    def _dec(exchange, contract, num, price, now_dt):
+    def _dec(self, exchange, contract, num, price, now_dt):
         """
         减仓，含减多和减空
         :param exchange:
@@ -112,7 +136,8 @@ class TradeCenter:
         release_pnl = latest_pnl * abs(num / holding_num)
 
         exchange.account.cash += (
-                release_pnl + release_margin - abs(num) * exchange.contract_dict[commodity].open_comm
+                release_pnl + release_margin - abs(num) * exchange.contract_dict[commodity].open_comm * price *
+                   exchange.contract_dict[commodity].contract_unit
         )
 
         # 注意正负号！多头减仓num为负数，空头减仓num为正数
@@ -121,6 +146,8 @@ class TradeCenter:
         exchange.account.position.holding_position[commodity][contract]['num'] += num
         print('trade_center.dec', latest_pnl, release_pnl)
         print('trade_center.dec', exchange.account.position.holding_position[commodity][contract], exchange.account.cash)
+        self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                              exchange.contract_dict[commodity].contract_unit
 
     def trade(self, exchange, target_num, now_dt, field):
 
