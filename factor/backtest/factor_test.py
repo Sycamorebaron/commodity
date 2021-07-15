@@ -411,12 +411,14 @@ class TimerFGBackTest(BackTest):
             {
                 'candle_begin_time': d['datetime'].iloc[0],
                 'contract': op_contract,
-                'rtn': rtn
+                'rtn': rtn,
+                'abs_rtn': abs(rtn)
             }
         )
 
     def strategy_target_pos(self, now_dt):
-        signal_pos = {}
+
+        contract_factor_list = []
         for comm in self.exchange.contract_dict.keys():
             if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
                 (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
@@ -429,28 +431,47 @@ class TimerFGBackTest(BackTest):
             if len(self.hist_rtn) < (segs * 30) + 1:
                 continue
 
-            hist_rtn_df = pd.DataFrame(self.hist_rtn)
+            hist_rtn_df = pd.DataFrame(self.hist_rtn[-301:])
+
             last_rtn = self.hist_rtn[-1]['rtn']
+
             seg_df = hist_rtn_df[:-1]
 
+            # 高于0.9的做空，低于0.1的做多
+            contract_factor_list.append(
+                {
+                    'contract': hist_rtn_df['contract'].iloc[-1],
+                    'factor': len(seg_df.loc[seg_df['rtn'] < last_rtn]) / len(seg_df)
+                }
+            )
 
-            label = segs - 1
-
-            for i in range(segs):
-                if (last_rtn >= seg_df['rtn'].quantile(i / segs)) & (last_rtn < seg_df['rtn'].quantile((i + 1) / segs)):
-                    label = i
-                    break
-
-            if label == 0:
-                signal_pos = {hist_rtn_df['contract'].iloc[-1]: 0.9}
-            elif label == (segs - 1):
-                signal_pos = {hist_rtn_df['contract'].iloc[-1]: -0.9}
-
+        signal_pos = {}
+        if len(contract_factor_list):
+            contract_factor_df = pd.DataFrame(contract_factor_list)
+            signal_factor_df = contract_factor_df.loc[
+                (contract_factor_df['factor'] < 0.1) | (contract_factor_df['factor'] > 0.9)
+                ].reset_index(drop=True)
+            if len(signal_factor_df):
+                for i in range(len(signal_factor_df)):
+                    if signal_factor_df['factor'].iloc[i] > 0.9:
+                        signal_pos[signal_factor_df['contract'].iloc[i]] = -1 / len(signal_factor_df)
+                    elif signal_factor_df['factor'].iloc[i] < 0.1:
+                        signal_pos[signal_factor_df['contract'].iloc[i]] = 1 / len(signal_factor_df)
+                    else:
+                        raise Exception('strategy_target_pos: FACTOR ERROR')
+            print(signal_factor_df)
+            print(signal_pos)
         return signal_pos
 
     def _termly_process(self, term_begin_time):
         BackTest._termly_process_skip_rest(self, term_begin_time)
         print('cumulated fee', self.agent.trade_center.cumulated_fee)
+
+
+class MildReverseBackTest(BackTest):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
+        BackTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night)
+        self.hist_rtn = []
 
 
 if __name__ == '__main__':
@@ -459,13 +480,14 @@ if __name__ == '__main__':
         begin_date='2014-01-01',
         end_date='2020-12-31',
         init_cash=10000000,
-        contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'FG'],
+        # contract_list=[i for i in NORMAL_CONTRACT_INFO if i['id'] == 'FG'],
+        contract_list=NORMAL_CONTRACT_INFO,
         local_data_path=local_data_path,
         term='15T',
         leverage=False,
         night=False
     )
     back_test.test()
-    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\reverse_fee.csv')
+    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\reverse.csv')
     back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\reverse_trade_hist.csv')
     # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')

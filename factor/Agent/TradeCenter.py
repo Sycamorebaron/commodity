@@ -64,7 +64,7 @@ class TradeCenter:
             exchange.contract_dict[commodity].contract_unit
         print('CLOSE', now_dt, contract, num, exchange.account.position.holding_position[commodity][contract]['hold_price'], price)
         print('PROFIT', (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * \
-            exchange.contract_dict[commodity].contract_unit)
+            exchange.contract_dict[commodity].contract_unit * num)
 
         exchange.account.cash += (
             today_profit + use_margin - abs(num) * exchange.contract_dict[commodity].close_comm * price *

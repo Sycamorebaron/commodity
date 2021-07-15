@@ -5,7 +5,7 @@ import seaborn as sns
 
 factor_15t_path = r'C:\15t_factor'
 comm_data_path = r'D:\commodity\data\hf_comm_factor_15t'
-typical_comm = 'FG'
+typical_comm = 'L'
 
 
 def double_axis_pic(data, fst_col, sec_col):
