@@ -474,6 +474,71 @@ class MildReverseBackTest(BackTest):
         self.hist_rtn = []
 
 
+    def _get_cal_factor_data(self, comm, now_dt, last_dt):
+        op_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        d = self.exchange.contract_dict[comm].data_dict[op_contract].copy()
+        d = d.loc[d['datetime'] < now_dt][-15:].reset_index(drop=True)
+        rtn = d['close'].iloc[-1] / d['open'].iloc[0] - 1
+        self.hist_rtn.append(
+            {
+                'candle_begin_time': d['datetime'].iloc[0],
+                'contract': op_contract,
+                'rtn': rtn,
+                'abs_rtn': abs(rtn)
+            }
+        )
+
+    def strategy_target_pos(self, now_dt):
+
+        contract_factor_list = []
+        for comm in self.exchange.contract_dict.keys():
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
+                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
+                continue
+
+            self._get_cal_factor_data(
+                comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
+            )
+            segs = 10
+            if len(self.hist_rtn) < (segs * 30) + 1:
+                continue
+
+            hist_rtn_df = pd.DataFrame(self.hist_rtn[-301:])
+
+            last_rtn = self.hist_rtn[-1]['rtn']
+
+            seg_df = hist_rtn_df[:-1]
+
+            # 高于0.9的做空，低于0.1的做多
+            contract_factor_list.append(
+                {
+                    'contract': hist_rtn_df['contract'].iloc[-1],
+                    'factor': len(seg_df.loc[seg_df['rtn'] < last_rtn]) / len(seg_df)
+                }
+            )
+
+        signal_pos = {}
+        if len(contract_factor_list):
+            contract_factor_df = pd.DataFrame(contract_factor_list)
+            signal_factor_df = contract_factor_df.loc[
+                (contract_factor_df['factor'] < 0.1) | (contract_factor_df['factor'] > 0.9)
+                ].reset_index(drop=True)
+            if len(signal_factor_df):
+                for i in range(len(signal_factor_df)):
+                    if signal_factor_df['factor'].iloc[i] > 0.9:
+                        signal_pos[signal_factor_df['contract'].iloc[i]] = -1 / len(signal_factor_df)
+                    elif signal_factor_df['factor'].iloc[i] < 0.1:
+                        signal_pos[signal_factor_df['contract'].iloc[i]] = 1 / len(signal_factor_df)
+                    else:
+                        raise Exception('strategy_target_pos: FACTOR ERROR')
+            print(signal_factor_df)
+            print(signal_pos)
+        return signal_pos
+
+
+
 if __name__ == '__main__':
     back_test = TimerFGBackTest(
         test_name='moment',
