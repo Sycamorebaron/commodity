@@ -30,7 +30,7 @@ def timer(func):
 class HFSynTest(BackTest):
     def __init__(
             self, factor_name, begin_date, end_date, init_cash, contract_list, local_factor_data_path, local_data_path,
-            term, leverage, train_data_len
+            term, leverage, train_data_len, night=False
     ):
         BackTest.__init__(
             self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night=False
