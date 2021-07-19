@@ -434,33 +434,47 @@ class TimerFGBackTest(BackTest):
             hist_rtn_df = pd.DataFrame(self.hist_rtn[-301:])
 
             last_rtn = self.hist_rtn[-1]['rtn']
-
+            last_abs_rtn = abs(self.hist_rtn[-1]['rtn'])
             seg_df = hist_rtn_df[:-1]
+
 
             # 高于0.9的做空，低于0.1的做多
             contract_factor_list.append(
                 {
                     'contract': hist_rtn_df['contract'].iloc[-1],
-                    'factor': len(seg_df.loc[seg_df['rtn'] < last_rtn]) / len(seg_df)
+                    'factor': len(seg_df.loc[seg_df['rtn'] < last_rtn]) / len(seg_df),
+                    'abs_factor': len(seg_df.loc[seg_df['abs_rtn'] < last_abs_rtn]) / len(seg_df)
                 }
             )
-
+        abs_rtn_thresh = 0.9
+        rtn_thresh = 0.8
         signal_pos = {}
+        # if len(contract_factor_list):
+        #     if contract_factor_list[0]['abs_factor'] < abs_rtn_thresh:
+        #         if contract_factor_list[0]['factor'] > rtn_thresh:
+        #             signal_pos[contract_factor_list[0]['contract']] = -0.9
+        #         elif contract_factor_list[0]['factor'] < (1 - rtn_thresh):
+        #             signal_pos[contract_factor_list[0]['contract']] = 0.9
+
         if len(contract_factor_list):
             contract_factor_df = pd.DataFrame(contract_factor_list)
+            contract_factor_df = contract_factor_df.loc[
+                (contract_factor_df['factor'] > rtn_thresh) | (contract_factor_df['factor'] < (1 - rtn_thresh))
+            ].reset_index(drop=True)
+
             signal_factor_df = contract_factor_df.loc[
-                (contract_factor_df['factor'] < 0.1) | (contract_factor_df['factor'] > 0.9)
-                ].reset_index(drop=True)
+                (contract_factor_df['factor'] > (1 - abs_rtn_thresh)) & (contract_factor_df['factor'] < abs_rtn_thresh)
+                 ].reset_index(drop=True)
             if len(signal_factor_df):
                 for i in range(len(signal_factor_df)):
-                    if signal_factor_df['factor'].iloc[i] > 0.9:
+                    if signal_factor_df['factor'].iloc[i] > rtn_thresh:
                         signal_pos[signal_factor_df['contract'].iloc[i]] = -1 / len(signal_factor_df)
-                    elif signal_factor_df['factor'].iloc[i] < 0.1:
+                    elif signal_factor_df['factor'].iloc[i] < (1 - rtn_thresh):
                         signal_pos[signal_factor_df['contract'].iloc[i]] = 1 / len(signal_factor_df)
                     else:
                         raise Exception('strategy_target_pos: FACTOR ERROR')
-            print(signal_factor_df)
-            print(signal_pos)
+                print(signal_factor_df)
+
         return signal_pos
 
     def _termly_process(self, term_begin_time):
@@ -472,7 +486,6 @@ class MildReverseBackTest(BackTest):
     def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
         BackTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night)
         self.hist_rtn = []
-
 
     def _get_cal_factor_data(self, comm, now_dt, last_dt):
         op_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -512,6 +525,9 @@ class MildReverseBackTest(BackTest):
             seg_df = hist_rtn_df[:-1]
 
             # 高于0.9的做空，低于0.1的做多
+            # 		<0.1到>0.6
+            # 		>0.9到<0.4
+
             contract_factor_list.append(
                 {
                     'contract': hist_rtn_df['contract'].iloc[-1],
@@ -520,27 +536,207 @@ class MildReverseBackTest(BackTest):
             )
 
         signal_pos = {}
-        if len(contract_factor_list):
-            contract_factor_df = pd.DataFrame(contract_factor_list)
-            signal_factor_df = contract_factor_df.loc[
-                (contract_factor_df['factor'] < 0.1) | (contract_factor_df['factor'] > 0.9)
-                ].reset_index(drop=True)
-            if len(signal_factor_df):
-                for i in range(len(signal_factor_df)):
-                    if signal_factor_df['factor'].iloc[i] > 0.9:
-                        signal_pos[signal_factor_df['contract'].iloc[i]] = -1 / len(signal_factor_df)
-                    elif signal_factor_df['factor'].iloc[i] < 0.1:
-                        signal_pos[signal_factor_df['contract'].iloc[i]] = 1 / len(signal_factor_df)
+
+        for comm in self.exchange.contract_dict.keys():
+            if len(contract_factor_list):
+                now_pos = self._get_pos(comm=comm, contract=contract_factor_list[0]['contract'])
+                if now_pos == 0:
+                    if contract_factor_list[0]['factor'] > 0.9:
+                        signal_pos[contract_factor_list[0]['contract']] = -0.9
+                    elif contract_factor_list[0]['factor'] < 0.1:
+                        signal_pos[contract_factor_list[0]['contract']] = 0.9
                     else:
-                        raise Exception('strategy_target_pos: FACTOR ERROR')
-            print(signal_factor_df)
-            print(signal_pos)
+                        signal_pos[contract_factor_list[0]['contract']] = 0
+                elif now_pos == 1:
+                    if (contract_factor_list[0]['factor'] > 0.6) & (contract_factor_list[0]['factor'] <= 0.9):
+                        signal_pos[contract_factor_list[0]['contract']] = 0
+                    elif contract_factor_list[0]['factor'] < 0.9:
+                        signal_pos[contract_factor_list[0]['contract']] = -0.9
+                    else:
+                        signal_pos[contract_factor_list[0]['contract']] = 0.9
+                elif now_pos == -1:
+                    if (contract_factor_list[0]['factor'] < 0.4) & (contract_factor_list[0]['factor'] >= 0.1):
+                        signal_pos[contract_factor_list[0]['contract']] = 0
+                    elif contract_factor_list[0]['factor'] < 0.1:
+                        signal_pos[contract_factor_list[0]['contract']] = 0.9
+                    else:
+                        signal_pos[contract_factor_list[0]['contract']] = -0.9
+
         return signal_pos
 
+    def _get_pos(self, comm, contract):
+
+        if len(self.exchange.account.position.holding_position[comm]):
+            print(self.exchange.account.position.holding_position[comm])
+            if self.exchange.account.position.holding_position[comm][contract]['num'] < 0:
+                return -1
+            elif self.exchange.account.position.holding_position[comm][contract]['num'] > 0:
+                return 1
+            else:
+                return 0
+        return 0
+
+
+    def _daily_process(self):
+        """
+        每日进行的流程
+        :return:
+        """
+        print(self.agent.earth_calender.now_date)
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+
+        # 逐期遍历
+        for term_begin_time in self.term_list:
+            self._termly_process(term_begin_time=term_begin_time)
+
+        # 每日清仓，只需要平仓手上的仓位
+        self.clear_position(term_begin_time=self.term_list[-1])
+
+        # 记录资金情况
+        self.agent.recorder.record_equity(
+            info={
+                'date': self.agent.earth_calender.now_date,
+                'equity': self.exchange.account.equity,
+            }
+        )
+
+        print('*' * 30)
+        print('DATE', self.agent.earth_calender.now_date)
+        print('EQUITY', self.exchange.account.equity)
+        print('*' * 30)
+        print('=' * 50)
+
+    def _termly_process(self, term_begin_time):
+        """
+        每期进行的流程
+        :param term_begin_time:
+        :return:
+        """
+        # print('$' * 25, term_begin_time, '$' * 25)
+        # print('-' * 25, 'before change position', '-' * 25)
+        # print('CASH', self.exchange.account.cash)
+        # print('position\n', self.exchange.account.position.holding_position)
+        # print('-' * 70)
+
+        if term_begin_time not in ['09:01', '10:16', '13:31', '21:01']:
+
+            # 再开仓
+            target_pos = self.strategy_target_pos(
+                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time)
+            )
+
+
+            # 根据目标仓位调仓
+            open_trade_info = self.agent.change_position(
+                exchange=self.exchange,
+                target_pos=target_pos,
+                now_dt='%s %s:00' % (self.agent.earth_calender.now_date.strftime('%Y-%m-%d'), term_begin_time),
+                field='open'
+            )
+
+            # 记录交易
+            self.agent.recorder.record_trade(info=open_trade_info)
+            # print('-' * 25, 'after change position', '-' * 25)
+            # print('CASH', self.exchange.account.cash)
+            # print('position\n',self.exchange.account.position.holding_position)
+            # print('-' * 70)
+            # print('$' * 55)
+        print('cumulated fee', self.agent.trade_center.cumulated_fee)
+
+
+class RegReverseBackTest(BackTest):
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
+        BackTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night)
+        self.hist_rtn = []
+        self.hist_corr = []
+
+    def _get_cal_factor_data(self, comm, now_dt, last_dt):
+        op_contract = self.exchange.contract_dict[comm].now_main_contract(
+            now_date=self.agent.earth_calender.now_date
+        )
+        d = self.exchange.contract_dict[comm].data_dict[op_contract].copy()
+        d = d.loc[d['datetime'] < now_dt][-15:].reset_index(drop=True)
+        rtn = d['close'].iloc[-1] / d['open'].iloc[0] - 1
+        self.hist_rtn.append(
+            {
+                'candle_begin_time': d['datetime'].iloc[0] - timedelta(minutes=1),
+                'contract': op_contract,
+                'rtn': rtn,
+                'abs_rtn': abs(rtn)
+            }
+        )
+
+    def strategy_target_pos(self, now_dt):
+
+        contract_factor_list = []
+        segs = 10
+
+        for comm in self.exchange.contract_dict.keys():
+            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
+                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
+                continue
+
+            self._get_cal_factor_data(
+                comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
+            )
+            if len(self.hist_rtn) < (segs * 30) + 1:
+                continue
+
+            hist_rtn_df = pd.DataFrame(self.hist_rtn[-((segs * 30) + 1):])
+            hist_rtn_df['f_rtn'] = hist_rtn_df['rtn'].shift(-1)
+            last_rtn = self.hist_rtn[-1]['rtn']
+            last_abs_rtn = abs(self.hist_rtn[-1]['rtn'])
+            train_df = hist_rtn_df[:-1]
+            corr = train_df['rtn'].corr(train_df['f_rtn'])
+
+            if abs(corr) > 0.1:
+                # 用corr判断方向，但如果太小了就不要了
+                contract_factor_list.append(
+                    {
+                        'contract': hist_rtn_df['contract'].iloc[-1],
+                        'factor': len(train_df.loc[train_df['rtn'] < last_rtn]) / len(train_df),
+                        'corr': corr
+                    }
+                )
+
+        signal_pos = {}
+        for factor in contract_factor_list:
+            if factor['corr'] > 0:
+                if factor['factor'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+                elif factor['factor'] < (1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+            if factor['corr'] < 0:
+                if factor['factor'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+                elif factor['factor'] < (1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+
+        # 有信号的均分仓位
+        if len(signal_pos):
+            for k in signal_pos.keys():
+                signal_pos[k] /= len(signal_pos)
+
+        return signal_pos
+
+    def _termly_process(self, term_begin_time):
+        BackTest._termly_process_skip_rest(self, term_begin_time)
+        print('cumulated fee', self.agent.trade_center.cumulated_fee)
 
 
 if __name__ == '__main__':
-    back_test = TimerFGBackTest(
+    back_test = RegReverseBackTest(
         test_name='moment',
         begin_date='2014-01-01',
         end_date='2020-12-31',
@@ -553,6 +749,7 @@ if __name__ == '__main__':
         night=False
     )
     back_test.test()
-    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\reverse.csv')
-    back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\reverse_trade_hist.csv')
+    corr_df = pd.DataFrame(back_test.hist_corr)
+    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\reg_fgreverse.csv')
+    back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\reg_fgreverse_trade_hist.csv')
     # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')

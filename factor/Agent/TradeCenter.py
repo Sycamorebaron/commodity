@@ -4,6 +4,7 @@ import string
 class TradeCenter:
     def __init__(self):
         self.cumulated_fee = 0
+        self.this_fee = 0
 
     def _open(self, exchange, contract, num, price, now_dt):
         """
@@ -40,6 +41,8 @@ class TradeCenter:
         }
         self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].open_comm * price * \
                               exchange.contract_dict[commodity].contract_unit
+        self.this_fee = abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                        exchange.contract_dict[commodity].contract_unit
         # print('open_margin', open_margin)
         # print('fee', exchange.contract_dict[commodity].open_comm * price *
         #         exchange.contract_dict[commodity].contract_unit)
@@ -62,10 +65,13 @@ class TradeCenter:
         today_profit = \
             (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * num * \
             exchange.contract_dict[commodity].contract_unit
-        print('CLOSE', now_dt, contract, num, exchange.account.position.holding_position[commodity][contract]['hold_price'], price)
-        print('PROFIT', (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * \
-            exchange.contract_dict[commodity].contract_unit * num)
-
+        # print('*' * 40)
+        # print('CLOSE', now_dt, contract, num, exchange.account.position.holding_position[commodity][contract]['hold_price'], price)
+        # print('PROFIT', (price - exchange.account.position.holding_position[commodity][contract]['hold_price']) * \
+        #     exchange.contract_dict[commodity].contract_unit * num)
+        # print('COMM', abs(num) * exchange.contract_dict[commodity].close_comm * price * \
+        #                       exchange.contract_dict[commodity].contract_unit)
+        # print('*' * 40)
         exchange.account.cash += (
             today_profit + use_margin - abs(num) * exchange.contract_dict[commodity].close_comm * price *
             exchange.contract_dict[commodity].contract_unit
@@ -74,6 +80,8 @@ class TradeCenter:
         exchange.account.position.drop(contract=contract)
         self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].close_comm * price * \
                               exchange.contract_dict[commodity].contract_unit
+        self.this_fee = abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                        exchange.contract_dict[commodity].contract_unit
 
     def _inc(self, exchange, contract, num, price, now_dt):
         """
@@ -111,6 +119,8 @@ class TradeCenter:
         }
         self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].open_comm * price * \
                               exchange.contract_dict[commodity].contract_unit
+        self.this_fee = abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                        exchange.contract_dict[commodity].contract_unit
 
     def _dec(self, exchange, contract, num, price, now_dt):
         """
@@ -148,6 +158,8 @@ class TradeCenter:
         print('trade_center.dec', exchange.account.position.holding_position[commodity][contract], exchange.account.cash)
         self.cumulated_fee += abs(num) * exchange.contract_dict[commodity].open_comm * price * \
                               exchange.contract_dict[commodity].contract_unit
+        self.this_fee = abs(num) * exchange.contract_dict[commodity].open_comm * price * \
+                        exchange.contract_dict[commodity].contract_unit
 
     def trade(self, exchange, target_num, now_dt, field):
 
@@ -166,7 +178,7 @@ class TradeCenter:
                                now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'long_open',
-                         'num': target_num[contract], 'price': price}
+                         'num': target_num[contract], 'price': price, 'fee': self.this_fee}
                     )
                 # 开空
                 elif target_num[contract] < 0:
@@ -174,7 +186,7 @@ class TradeCenter:
                                now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'short_open',
-                         'num': target_num[contract], 'price': price}
+                         'num': target_num[contract], 'price': price, 'fee': self.this_fee}
                     )
             # 持有多头
             elif hold_num > 0:
@@ -184,7 +196,7 @@ class TradeCenter:
                               now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'long_inc',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
                 # 减多
                 elif (target_num[contract] < hold_num) & (target_num[contract] > 0):
@@ -192,14 +204,14 @@ class TradeCenter:
                               now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'long_dec',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
                 # 平多
                 elif target_num[contract] == 0:
                     self._close(exchange=exchange, contract=contract, price=price, now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'long_close', 'num': -hold_num,
-                         'price': price}
+                         'price': price, 'fee': self.this_fee}
                     )
                 # 平多开空
                 elif target_num[contract] < 0:
@@ -208,7 +220,7 @@ class TradeCenter:
                                now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'long_close_short_open',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
             # 持有空头
             elif hold_num < 0:
@@ -218,7 +230,7 @@ class TradeCenter:
                               now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'short_inc',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
                 # 减空
                 elif (target_num[contract] > hold_num) & (target_num[contract] < 0):
@@ -226,14 +238,14 @@ class TradeCenter:
                               now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'short_dec',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
                 # 平空
                 elif target_num[contract] == 0:
                     self._close(exchange=exchange, contract=contract, price=price, now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'short_close',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
                 # 平空开多
                 elif target_num[contract] > 0:
@@ -242,7 +254,7 @@ class TradeCenter:
                                now_dt=now_dt)
                     trade_info.append(
                         {'now_date': now_dt, 'contract': contract, 'trade_type': 'short_close_long_open',
-                         'num': target_num[contract] - hold_num, 'price': price}
+                         'num': target_num[contract] - hold_num, 'price': price, 'fee': self.this_fee}
                     )
 
         return trade_info

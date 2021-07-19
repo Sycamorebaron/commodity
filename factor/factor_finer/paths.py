@@ -4,8 +4,10 @@ import numpy as np
 import seaborn as sns
 
 factor_15t_path = r'C:\15t_factor'
+factor_30t_path = r'C:\30t_factor'
+comm_data_path_30t = r'D:\commodity\data\hf_comm_factor'
 comm_data_path = r'D:\commodity\data\hf_comm_factor_15t'
-typical_comm = 'L'
+typical_comm = 'FG'
 
 
 def double_axis_pic(data, fst_col, sec_col):
