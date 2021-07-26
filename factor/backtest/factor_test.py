@@ -329,37 +329,6 @@ class MomentumBackTest(BackTest):
         BackTest._termly_process_skip_rest(self, term_begin_time)
 
 
-class DoiRtnBackTest(BackTest):
-    def strategy_target_pos(self, now_dt):
-
-        contract_factor_list = []
-        for comm in self.exchange.contract_dict.keys():
-            if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
-                (pd.to_datetime(now_dt) > self.exchange.contract_dict[comm].last_de_listed_date):
-                continue
-
-            cal_factor_data = self._get_cal_factor_data(
-                comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
-            )
-            cal_factor_data['rtn'] = cal_factor_data['close'] / cal_factor_data['open'] - 1
-            cal_factor_data['doi'] = cal_factor_data['open_interest'] - cal_factor_data['open_interest'].shift(1)
-            contract_factor_list.append(
-                {
-                    'contract': cal_factor_data['order_book_id'].iloc[0],
-                    'factor': cal_factor_data['doi'].corr(cal_factor_data['rtn'])
-                }
-            )
-        contract_factor_df = \
-            pd.DataFrame(contract_factor_list).sort_values(by='factor', ascending=False).reset_index(drop=True)
-        signal_pos = {}
-
-        # 开仓信号
-        signal_pos[contract_factor_df['contract'].iloc[0]] = 0.5
-        signal_pos[contract_factor_df['contract'].iloc[-1]] = -0.5
-
-        return signal_pos
-
-
 class R1DV0BackTest(BackTest):
     def strategy_target_pos(self, now_dt):
 
@@ -793,6 +762,8 @@ class RegReverseBackTestV2(BackTest):
 
             hist_rtn_df = pd.DataFrame(self.hist_rtn[comm])
             hist_rtn_df['f_rtn'] = hist_rtn_df['rtn'].shift(-1)
+
+            # 去掉其中收益率为0的部分
             hist_rtn_df = hist_rtn_df.loc[hist_rtn_df['abs_rtn'] > 0].reset_index(drop=True)
 
             if len(hist_rtn_df) < (segs * 30) + 1:
@@ -806,7 +777,7 @@ class RegReverseBackTestV2(BackTest):
             train_df = hist_rtn_df[:-1]
             corr = train_df['rtn'].corr(train_df['f_rtn'])
 
-            if abs(corr) > 0.3:
+            if abs(corr) > 0.2:
                 # 用corr判断方向，但如果太小了就不要了
                 contract_factor_list.append(
                     {
@@ -841,10 +812,11 @@ class RegReverseBackTestV2(BackTest):
         print('cumulated fee', self.agent.trade_center.cumulated_fee)
 
 
-class VARIMABackTest(BackTest):
+class P1V0BackTest(BackTest):
     def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
         BackTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night)
-        self.hist_rtn = {}
+        self.hist_factor = {}
+        self.hist_corr = []
 
     def _get_cal_factor_data(self, comm, now_dt, last_dt):
         op_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -852,27 +824,34 @@ class VARIMABackTest(BackTest):
         )
         d = self.exchange.contract_dict[comm].data_dict[op_contract].copy()
         d = d.loc[d['datetime'] < now_dt][-15:].reset_index(drop=True)
+
         rtn = d['close'].iloc[-1] / d['open'].iloc[0] - 1
-        if comm in self.hist_rtn.keys():
-            self.hist_rtn[comm].append(
+        P1V0 = d['close'].shift(1).corr(d['volume'])
+        if comm in self.hist_factor.keys():
+            self.hist_factor[comm].append(
                 {
                     'candle_begin_time': d['datetime'].iloc[0] - timedelta(minutes=1),
                     'contract': op_contract,
+                    'factor': P1V0,
                     'rtn': rtn,
-                    'abs_rtn': abs(rtn)
                 }
             )
         else:
-            self.hist_rtn[comm] = [
+            self.hist_factor[comm] = [
                 {
                     'candle_begin_time': d['datetime'].iloc[0] - timedelta(minutes=1),
                     'contract': op_contract,
+                    'factor': P1V0,
                     'rtn': rtn,
-                    'abs_rtn': abs(rtn)
                 }
             ]
 
     def strategy_target_pos(self, now_dt):
+
+        contract_factor_list = []
+        signal_pos = {}
+        segs = 10
+        _t_corr = {'datetime': now_dt}
 
         for comm in self.exchange.contract_dict.keys():
             if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
@@ -882,26 +861,61 @@ class VARIMABackTest(BackTest):
             self._get_cal_factor_data(
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
             )
-        sum_comm_data = pd.DataFrame()
-        for comm in self.exchange.contract_dict.keys():
-            comm_df = pd.DataFrame(self.hist_rtn[comm])
-            comm_df = comm_df[['candle_begin_time', 'rtn', 'f_rtn']]
-            comm_df.columns = [
-                'candle_begin_time', self.hist_rtn[comm][-1]['contract'], 'f_' + self.hist_rtn[comm][-1]['contract']
-            ]
-            if len(sum_comm_data):
-                sum_comm_data = sum_comm_data.merge(comm_df, on='candle_begin_time', how='outer')
-            else:
-                sum_comm_data = comm_df
-        print(sum_comm_data)
-        exit()
 
-        signal_pos = {}
+            hist_rtn_df = pd.DataFrame(self.hist_factor[comm])
+            hist_rtn_df['f_rtn'] = hist_rtn_df['rtn'].shift(-1)
 
-        # 有信号的均分仓位
-        if len(signal_pos):
-            for k in signal_pos.keys():
-                signal_pos[k] /= len(signal_pos)
+            if len(hist_rtn_df) < (segs * 30) + 1:
+                continue
+            if not abs(self.hist_factor[comm][-1]['factor']) > 0:
+                continue
+
+            # 去掉其中factor为nan的部分
+            hist_rtn_df = hist_rtn_df.loc[hist_rtn_df['factor'].notna()].reset_index(drop=True)
+
+            # 去掉之后也要保证有一定的数据量
+
+            if len(hist_rtn_df) < (segs * 30) + 1:
+                continue
+
+            hist_rtn_df = hist_rtn_df[-301:]
+            last_factor = self.hist_factor[comm][-1]['factor']
+
+            train_df = hist_rtn_df[:-1]
+            corr = train_df['factor'].corr(train_df['f_rtn'])
+
+        # ====== 计算相关系数，保存下来看范围====
+            _t_corr[comm] = corr
+
+        self.hist_corr.append(_t_corr)
+        # ====================================
+
+        #     if abs(corr) > 0.1:
+        #         # 用corr判断方向，但如果太小了就不要了
+        #         contract_factor_list.append(
+        #             {
+        #                 'contract': hist_rtn_df['contract'].iloc[-1],
+        #                 'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
+        #                 'corr': corr
+        #             }
+        #         )
+        #
+        # for factor in contract_factor_list:
+        #     if factor['corr'] > 0:
+        #         if factor['factor_pct'] > (1 - 1 / segs):
+        #             signal_pos[factor['contract']] = 0.9
+        #         elif factor['factor_pct'] < (1 / segs):
+        #             signal_pos[factor['contract']] = -0.9
+        #     if factor['corr'] < 0:
+        #         if factor['factor_pct'] > (1 - 1 / segs):
+        #             signal_pos[factor['contract']] = -0.9
+        #         elif factor['factor_pct'] < (1 / segs):
+        #             signal_pos[factor['contract']] = 0.9
+        #
+        # # 有信号的均分仓位
+        # if len(signal_pos):
+        #     for k in signal_pos.keys():
+        #         signal_pos[k] /= len(signal_pos)
 
         return signal_pos
 
@@ -925,6 +939,9 @@ if __name__ == '__main__':
     )
     back_test.test()
     corr_df = pd.DataFrame(back_test.hist_corr)
-    back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\corr_reverse.csv')
-    back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\corr_reverse_trade_hist.csv')
+    corr_df.to_csv(r'D:\commodity\data\hist_corr\P1V0.csv')
+
+    # corr_df = pd.DataFrame(back_test.hist_corr)
+    # back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\corr2_reverse.csv')
+    # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\corr2_reverse_trade_hist.csv')
     # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')
