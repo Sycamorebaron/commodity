@@ -280,16 +280,10 @@ class BackTest(MainTest):
         print('=' * 50)
 
 
-def _corr_task(hist_factor_comm, comm):
-    segs = 10
+def _corr_task(hist_factor_comm, comm, segs):
 
     hist_rtn_df = pd.DataFrame(hist_factor_comm)
     hist_rtn_df['f_rtn'] = hist_rtn_df['rtn'].shift(-1)
-
-    if len(hist_rtn_df) < (segs * 30) + 1:
-        return {comm: None}
-    if not abs(hist_factor_comm[-1]['factor']) > 0:
-        return {comm: None}
 
     # 去掉其中factor为nan的部分
     hist_rtn_df = hist_rtn_df.loc[hist_rtn_df['factor'].notna()].reset_index(drop=True)
@@ -344,10 +338,12 @@ class CalCorrBackTest(BackTest):
                 }
             ]
 
+    @timer
     def strategy_target_pos(self, now_dt):
         _t_corr = {'datetime': now_dt}
-
+        segs = 10
         pool = Pool(processes=4)
+
         result = []
         for comm in self.exchange.contract_dict.keys():
             if (pd.to_datetime(now_dt) < self.exchange.contract_dict[comm].first_listed_date + timedelta(days=2)) or \
@@ -357,16 +353,23 @@ class CalCorrBackTest(BackTest):
                 comm=comm, now_dt=now_dt, last_dt=self._last_dt(now_dt=now_dt)
             )
             hist_factor_comm = self.hist_factor[comm]
-            result.append(pool.apply_async(func=_corr_task, args=(hist_factor_comm, comm,)))
+
+            if len(hist_factor_comm) < (segs * 30) + 1:
+                continue
+            if not abs(hist_factor_comm[-1]['factor']) > 0:
+                continue
+            print('into cycle')
+            # result.append(_corr_task(hist_factor_comm, comm, segs))
+            result.append(pool.apply_async(func=_corr_task, args=(hist_factor_comm, comm, segs,)))
 
         pool.close()
         pool.join()
 
-        if len(result):
-            for i in result:
-                _r = i.get()
-                _t_corr = {**_t_corr, **i.get()}
-        print(_t_corr)
+        # if len(result):
+        #     for i in result:
+        #         _r = i.get()
+        #         _t_corr = {**_t_corr, **i.get()}
+        print(result)
         #
         #
         # # ====== 计算相关系数，保存下来看范围====
@@ -417,7 +420,6 @@ class CalCorrBackTest(BackTest):
 
 
 if __name__ == '__main__':
-
 
     back_test = CalCorrBackTest(
         test_name='moment',

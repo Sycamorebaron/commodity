@@ -436,37 +436,37 @@ class DoiRtnBackTest(BackTest):
             corr = train_df['factor'].corr(train_df['f_rtn'])
 
         # ====== 计算相关系数，保存下来看范围====
-            _t_corr[comm] = corr
-
-        self.hist_corr.append(_t_corr)
+        #     _t_corr[comm] = corr
+        #
+        # self.hist_corr.append(_t_corr)
         # ====================================
 
-        #     if abs(corr) > 0.1:
-        #         # 用corr判断方向，但如果太小了就不要了
-        #         contract_factor_list.append(
-        #             {
-        #                 'contract': hist_rtn_df['contract'].iloc[-1],
-        #                 'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
-        #                 'corr': corr
-        #             }
-        #         )
-        #
-        # for factor in contract_factor_list:
-        #     if factor['corr'] > 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #     if factor['corr'] < 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #
-        # # 有信号的均分仓位
-        # if len(signal_pos):
-        #     for k in signal_pos.keys():
-        #         signal_pos[k] /= len(signal_pos)
+            if abs(corr) > 0.15:
+                # 用corr判断方向，但如果太小了就不要了
+                contract_factor_list.append(
+                    {
+                        'contract': hist_rtn_df['contract'].iloc[-1],
+                        'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
+                        'corr': corr
+                    }
+                )
+
+        for factor in contract_factor_list:
+            if factor['corr'] > 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+            if factor['corr'] < 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+
+        # 有信号的均分仓位
+        if len(signal_pos):
+            for k in signal_pos.keys():
+                signal_pos[k] /= len(signal_pos)
 
         return signal_pos
 
@@ -535,7 +535,7 @@ class DvolRtnCorrBackTest(BackTest):
 
             if len(hist_rtn_df) < (segs * 30) + 1:
                 continue
-            if not abs(self.hist_factor[comm][-1]['factor']) > 0:
+            if not abs(self.hist_factor[comm][-1]['factor'])  > 0:
                 continue
 
             # 去掉其中factor为nan的部分
@@ -553,37 +553,37 @@ class DvolRtnCorrBackTest(BackTest):
             corr = train_df['factor'].corr(train_df['f_rtn'])
 
         # ====== 计算相关系数，保存下来看范围====
-            _t_corr[comm] = corr
-
-        self.hist_corr.append(_t_corr)
+        #     _t_corr[comm] = corr
+        #
+        # self.hist_corr.append(_t_corr)
         # ====================================
 
-        #     if abs(corr) > 0.1:
-        #         # 用corr判断方向，但如果太小了就不要了
-        #         contract_factor_list.append(
-        #             {
-        #                 'contract': hist_rtn_df['contract'].iloc[-1],
-        #                 'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
-        #                 'corr': corr
-        #             }
-        #         )
-        #
-        # for factor in contract_factor_list:
-        #     if factor['corr'] > 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #     if factor['corr'] < 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #
-        # # 有信号的均分仓位
-        # if len(signal_pos):
-        #     for k in signal_pos.keys():
-        #         signal_pos[k] /= len(signal_pos)
+            if abs(corr) > 0.15:
+                # 用corr判断方向，但如果太小了就不要了
+                contract_factor_list.append(
+                    {
+                        'contract': hist_rtn_df['contract'].iloc[-1],
+                        'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
+                        'corr': corr
+                    }
+                )
+
+        for factor in contract_factor_list:
+            if factor['corr'] > 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+            if factor['corr'] < 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+
+        # 有信号的均分仓位
+        if len(signal_pos):
+            for k in signal_pos.keys():
+                signal_pos[k] /= len(signal_pos)
 
         return signal_pos
 
@@ -669,37 +669,37 @@ class VbigRtnMeanBackTest(BackTest):
             corr = train_df['factor'].corr(train_df['f_rtn'])
 
         # ====== 计算相关系数，保存下来看范围====
-            _t_corr[comm] = corr
-
-        self.hist_corr.append(_t_corr)
+        #     _t_corr[comm] = corr
+        #
+        # self.hist_corr.append(_t_corr)
         # ====================================
 
-        #     if abs(corr) > 0.1:
-        #         # 用corr判断方向，但如果太小了就不要了
-        #         contract_factor_list.append(
-        #             {
-        #                 'contract': hist_rtn_df['contract'].iloc[-1],
-        #                 'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
-        #                 'corr': corr
-        #             }
-        #         )
-        #
-        # for factor in contract_factor_list:
-        #     if factor['corr'] > 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #     if factor['corr'] < 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #
-        # # 有信号的均分仓位
-        # if len(signal_pos):
-        #     for k in signal_pos.keys():
-        #         signal_pos[k] /= len(signal_pos)
+            if abs(corr) > 0.1:
+                # 用corr判断方向，但如果太小了就不要了
+                contract_factor_list.append(
+                    {
+                        'contract': hist_rtn_df['contract'].iloc[-1],
+                        'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
+                        'corr': corr
+                    }
+                )
+
+        for factor in contract_factor_list:
+            if factor['corr'] > 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+            if factor['corr'] < 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+
+        # 有信号的均分仓位
+        if len(signal_pos):
+            for k in signal_pos.keys():
+                signal_pos[k] /= len(signal_pos)
 
         return signal_pos
 
@@ -781,37 +781,37 @@ class P0V1BackTest(BackTest):
             corr = train_df['factor'].corr(train_df['f_rtn'])
 
         # ====== 计算相关系数，保存下来看范围====
-            _t_corr[comm] = corr
-
-        self.hist_corr.append(_t_corr)
+        #     _t_corr[comm] = corr
+        #
+        # self.hist_corr.append(_t_corr)
         # ====================================
 
-        #     if abs(corr) > 0.1:
-        #         # 用corr判断方向，但如果太小了就不要了
-        #         contract_factor_list.append(
-        #             {
-        #                 'contract': hist_rtn_df['contract'].iloc[-1],
-        #                 'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
-        #                 'corr': corr
-        #             }
-        #         )
-        #
-        # for factor in contract_factor_list:
-        #     if factor['corr'] > 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #     if factor['corr'] < 0:
-        #         if factor['factor_pct'] > (1 - 1 / segs):
-        #             signal_pos[factor['contract']] = -0.9
-        #         elif factor['factor_pct'] < (1 / segs):
-        #             signal_pos[factor['contract']] = 0.9
-        #
-        # # 有信号的均分仓位
-        # if len(signal_pos):
-        #     for k in signal_pos.keys():
-        #         signal_pos[k] /= len(signal_pos)
+            if abs(corr) > 0.1:
+                # 用corr判断方向，但如果太小了就不要了
+                contract_factor_list.append(
+                    {
+                        'contract': hist_rtn_df['contract'].iloc[-1],
+                        'factor_pct': len(train_df.loc[train_df['factor'] < last_factor]) / len(train_df),
+                        'corr': corr
+                    }
+                )
+
+        for factor in contract_factor_list:
+            if factor['corr'] > 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+            if factor['corr'] < 0:
+                if factor['factor_pct'] > (1 - 1 / segs):
+                    signal_pos[factor['contract']] = -0.9
+                elif factor['factor_pct'] < (1 / segs):
+                    signal_pos[factor['contract']] = 0.9
+
+        # 有信号的均分仓位
+        if len(signal_pos):
+            for k in signal_pos.keys():
+                signal_pos[k] /= len(signal_pos)
 
         return signal_pos
 
@@ -823,7 +823,7 @@ class P0V1BackTest(BackTest):
 if __name__ == '__main__':
 
     back_test = P0V1BackTest(
-        test_name='moment',
+        test_name='P0V1BackTest',
         begin_date='2014-01-01',
         end_date='2020-12-31',
         init_cash=10000000,
@@ -834,8 +834,6 @@ if __name__ == '__main__':
         night=False
     )
     back_test.test()
-    corr_df = pd.DataFrame(back_test.hist_corr)
-    corr_df.to_csv(r'D:\commodity\data\hist_corr\P0V1.csv')
-    # back_test.agent.recorder.equity_curve().to_csv(r'C:\Users\sycam\Desktop\corr_reverse.csv')
-    # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\corr_reverse_trade_hist.csv')
-    # back_test.agent.recorder.trade_hist().to_csv(r'C:\Users\sycam\Desktop\momentum.csv')
+
+    back_test.agent.recorder.equity_curve().to_csv(r'D:\commodity\data\%s_equity_curve.csv' % back_test.test_name)
+    back_test.agent.recorder.trade_hist().to_csv(r'D:\commodity\data\%s_trade_hist.csv' % back_test.test_name)
