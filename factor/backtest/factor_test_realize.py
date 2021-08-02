@@ -7,7 +7,7 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
-from factor.test.main_test import MainTest
+from factor.cal_factor.main_test import MainTest
 from utils.base_para import *
 
 

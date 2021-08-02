@@ -73,7 +73,7 @@ class ChangeMonthTest(MainTest):
 
 if __name__ == '__main__':
     main_test = ChangeMonthTest(
-        test_name='test',
+        test_name='cal_factor',
         begin_date='2011-01-01',
         end_date='2012-11-26',
         init_cash=1000000,

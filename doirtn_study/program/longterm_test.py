@@ -190,7 +190,7 @@ if __name__ == '__main__':
         train_data_len=100,
         local_factor_data_path=local_5t_factor_path
     )
-    back_test.test()
+    back_test.cal_factor()
     doi_rtn_df = pd.DataFrame(back_test.doi_rtn_res)
     doi_rtn_df.to_csv(r'D:\commodity\doirtn_study\data\doi_rtn.csv')
     print(doi_rtn_df)
@@ -241,7 +241,7 @@ if __name__ == '__main__':
         train_data_len=100,
         local_factor_data_path=local_5t_factor_path
     )
-    back_test.test()
+    back_test.cal_factor()
     doi_rtn_df = pd.DataFrame(back_test.doi_rtn_res)
     doi_rtn_df.to_csv(r'D:\commodity\doirtn_study\data\HF_doi_rtn.csv')
     print(doi_rtn_df)

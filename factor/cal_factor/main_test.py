@@ -1,28 +1,33 @@
-from raw_backtest.Exchange.Exchange import Exchange
-from raw_backtest.Agent.Agent import Agent
-from raw_backtest.Agent.Strategy import MAStrategy
-from utils.base_para import OUTPUT_DATA_PATH
+from factor.Exchange.Exchange import Exchange
+from factor.Agent.Agent import Agent
+from factor.Agent.Strategy import MAStrategy
+from utils.base_para import OUTPUT_DATA_PATH, local_data_path
 import os
 
 
 class MainTest:
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list):
+    def __init__(
+        self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage=True
+    ):
         self.test_name = test_name
         self._begin_date = begin_date
         self.end_date = end_date
+
         self.exchange = Exchange(
             contract_list=contract_list,
-            init_cash=init_cash
+            init_cash=init_cash,
+            local_data_path=local_data_path
         )
-        self.agent = self._gen_agent(begin_date=begin_date, end_date=end_date)
+        self.agent = self._gen_agent(begin_date=begin_date, end_date=end_date, leverage=leverage)
 
-    def _gen_agent(self, begin_date, end_date):
+    def _gen_agent(self, begin_date, end_date, leverage):
         return Agent(
             strategy=MAStrategy(
                 ma_para_list=[5, 10, 20, 60, 120]
             ),
             begin_date=begin_date,
             end_date=end_date,
+            leverage=leverage,
         )
 
     def _daily_process(self):
@@ -40,7 +45,7 @@ class MainTest:
                 exchange=self.exchange,
                 now_operate_contract=now_operate_contract,
                 new_operate_contract=new_operate_contract,
-                now_date=self.agent.earth_calender.now_date
+                now_dt=self.agent.earth_calender.now_date
             )
 
         # 根据策略计算目标仓位
@@ -49,11 +54,14 @@ class MainTest:
             tm=self.agent.earth_calender.now_date
         )
         print(target_pos)
+
         # 根据目标仓位调仓
         trade_info = self.agent.change_position(
             exchange=self.exchange,
             target_pos=target_pos,
+            now_dt=self.agent.earth_calender.now_date
         )
+
         # 记录交易
         self.agent.recorder.record_trade(info=trade_info)
 
@@ -94,22 +102,3 @@ class MainTest:
 
         self.agent.recorder.equity_curve().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_equity_curve.csv' % self.test_name))
         self.agent.recorder.trade_hist().to_csv(os.path.join(OUTPUT_DATA_PATH, '%s_trade_hist.csv' % self.test_name))
-
-if __name__ == '__main__':
-    main_test = MainTest(
-        test_name='cal_factor',
-        begin_date='2011-01-01',
-        end_date='2012-11-26',
-        init_cash=1000000,
-        contract_list=[
-                {
-                    'id': 'M',
-                    'month_list': [1, 3, 5, 7, 8, 9, 11, 12],
-                    'init_margin_rate': 0.15,
-                    'contract_unit': 10,
-                    'open_comm': 5,
-                    'close_comm': 5,
-                },
-            ]
-    )
-    main_test.test()

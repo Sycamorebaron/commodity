@@ -67,7 +67,7 @@ if __name__ == '__main__':
     ]
 
     main_test = SpreadTest(
-        test_name='test',
+        test_name='cal_factor',
         begin_date='2012-12-11',
         end_date='2020-12-31',
         init_cash=1000000,

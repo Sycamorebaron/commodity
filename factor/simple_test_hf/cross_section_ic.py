@@ -23,7 +23,8 @@ factor_list = [
     # '15Tup_rtn_std', '15Tup_vol_pct', '15Tvbig_rtn_mean', '15Tvbig_rtn_vol', '15Tvbig_rv_corr', '15Tvol_oi',
     # '15Tv10_v30', '15Tv5_v20', '15Tv5_v30', '15Tstd10_std30', '15Tstd5_std20', '15Tstd5_std30', '15TBV_rtn',
     # '15Tstd_rtn'
-    '15Tdoi_rtn_corr'
+    # '15Tdoi_rtn_corr'
+    '15Td_main_sec_basis', '15Tdbdv', '15Tdbdoi'
 ]
 
 
@@ -94,6 +95,6 @@ for factor in factor_list:
             )
     factor_ic_df = pd.DataFrame(factor_ic)
     factor_ic_df['%s_expanding_ic' % factor] = factor_ic_df['ic'].expanding().sum()
-    factor_ic_df.to_csv(os.path.join(r'C:\Users\sycam\Desktop', 'all_%s_detail.csv' % factor))
-    exit()
-    # factor_ic_df.to_csv(os.path.join(r'D:\commodity\data\hf_ic_15t', '%s_detail.csv' % factor))
+    # factor_ic_df.to_csv(os.path.join(r'C:\Users\sycam\Desktop', 'all_%s_detail.csv' % factor))
+    # exit()
+    factor_ic_df.to_csv(os.path.join(r'D:\commodity\data\hf_ic_15t', '%s_detail.csv' % factor))

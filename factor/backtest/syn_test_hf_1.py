@@ -285,7 +285,7 @@ class HFSynTest(BackTest):
 
             # print('train_data', comm, train_data)
             # print('test_data', comm, test_data)
-            # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
+            # cal_factor data 中有因子缺失，需要在训练数据中也将这部分因子去掉
             if np.isnan(test_data[1:]).any():
                 test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
                 if '15Tf_rtn' in test_miss_col:
@@ -377,7 +377,7 @@ class PureSignal(HFSynTest):
             # train_data = t_comm_data[:-1]
             test_data = t_comm_data.iloc[-1]
 
-            # test data 中有因子缺失，需要在训练数据中也将这部分因子去掉
+            # cal_factor data 中有因子缺失，需要在训练数据中也将这部分因子去掉
             if np.isnan(test_data[1:]).any():
                 test_miss_col = [i for i in test_data.index if np.isnan(test_data[i])]
                 if '15Tf_rtn' in test_miss_col:

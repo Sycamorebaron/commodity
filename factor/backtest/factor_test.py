@@ -7,7 +7,7 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
-from factor.test.main_test import MainTest
+from factor.cal_factor.main_test import MainTest
 from utils.base_para import *
 
 
@@ -937,6 +937,7 @@ if __name__ == '__main__':
         leverage=False,
         night=False
     )
+
     back_test.test()
     corr_df = pd.DataFrame(back_test.hist_corr)
     corr_df.to_csv(r'D:\commodity\data\hist_corr\P1V0.csv')
