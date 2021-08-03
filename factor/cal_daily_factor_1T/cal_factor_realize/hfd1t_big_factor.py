@@ -9,7 +9,7 @@ from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path, OUTPUT_DATA_P
 
 pd.set_option('expand_frame_repr', False)
 
-def hf_pca_factor(begin_date='2010-01-04', end_date='2021-02-28'):
+def hf_big_factor(begin_date='2010-01-04', end_date='2021-02-28'):
 
     cal_factor = HFBigFactor(
         factor_name='hf_big_factor_%s_%s' % (begin_date, end_date),

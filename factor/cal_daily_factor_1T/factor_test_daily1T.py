@@ -199,10 +199,10 @@ class HFRtnMoment(HFFactor):
     def t_daily_factor(self, open_comm_list):
 
         _factor_dict = {
-            'mean': pd.DataFrame(),
-            'std': pd.DataFrame(),
-            'skew': pd.DataFrame(),
-            'kurt': pd.DataFrame()
+            'mean': {},
+            'std': {},
+            'skew': {},
+            'kurt': {}
         }
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -213,6 +213,8 @@ class HFRtnMoment(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -310,17 +312,17 @@ class HFUpDownFactor(HFFactor):
     def t_daily_factor(self, open_comm_list):
 
         _factor_dict = {
-            'up_rtn_mean': pd.DataFrame(),
-            'up_rtn_std': pd.DataFrame(),
-            'up_move_vol_pct': pd.DataFrame(),
-            'up_vol_pct': pd.DataFrame(),
+            'up_rtn_mean': {},
+            'up_rtn_std': {},
+            'up_move_vol_pct': {},
+            'up_vol_pct': {},
 
-            'down_rtn_mean': pd.DataFrame(),
-            'down_rtn_std': pd.DataFrame(),
-            'down_move_vol_pct': pd.DataFrame(),
-            'down_vol_pct': pd.DataFrame(),
+            'down_rtn_mean': {},
+            'down_rtn_std': {},
+            'down_move_vol_pct': {},
+            'down_vol_pct': {},
 
-            'trend_ratio': pd.DataFrame()
+            'trend_ratio': {}
         }
 
         for comm in open_comm_list:
@@ -332,6 +334,8 @@ class HFUpDownFactor(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -380,9 +384,9 @@ class HFVolPrice(HFFactor):
     def t_daily_factor(self, open_comm_list):
 
         _factor_dict = {
-            'dvol_rtn_corr': pd.DataFrame(),
-            'doi_rtn_corr': pd.DataFrame(),
-            'dvol_doi_corr': pd.DataFrame()
+            'dvol_rtn_corr': {},
+            'doi_rtn_corr': {},
+            'dvol_doi_corr': {}
         }
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -393,6 +397,8 @@ class HFVolPrice(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -453,7 +459,6 @@ class HFPCAFactor(HFFactor):
             open_comm_list.append(comm)
 
         t_factor_dict = self.t_daily_factor(open_comm_list)
-        print(t_factor_dict)
 
         self.d_first_com.append(t_factor_dict['d_first_com'])
         self.d_sec_com.append(t_factor_dict['d_sec_com'])
@@ -468,14 +473,14 @@ class HFPCAFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'd_first_com': pd.DataFrame(),
-            'd_sec_com': pd.DataFrame(),
-            'first_com_range': pd.DataFrame(),
-            'sec_com_range': pd.DataFrame(),
-            'd_first_com_std': pd.DataFrame(),
-            'd_sec_com_std': pd.DataFrame(),
-            'first_explained_ratio': pd.DataFrame(),
-            'sec_explained_ratio': pd.DataFrame(),
+            'd_first_com': {},
+            'd_sec_com': {},
+            'first_com_range': {},
+            'sec_com_range': {},
+            'd_first_com_std': {},
+            'd_sec_com_std': {},
+            'first_explained_ratio': {},
+            'sec_explained_ratio': {},
         }
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -595,12 +600,12 @@ class HFBigFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'vbig_rtn_mean': pd.DataFrame(),
-            'vbig_rtn_vol': pd.DataFrame(),
-            'vbig_rv_corr': pd.DataFrame(),
-            'abig_rtn_mean': pd.DataFrame(),
-            'abig_rtn_vol': pd.DataFrame(),
-            'abig_ra_corr': pd.DataFrame(),
+            'vbig_rtn_mean': {},
+            'vbig_rtn_vol': {},
+            'vbig_rv_corr': {},
+            'abig_rtn_mean': {},
+            'abig_rtn_vol': {},
+            'abig_ra_corr': {},
         }
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -608,6 +613,9 @@ class HFBigFactor(HFFactor):
             )
             _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
             today_data = self.trunc_data(_data)
+
+            today_data['amt'] = today_data['close'] * today_data['volume']
+            today_data['rtn'] = today_data['close'] / today_data['open'] - 1
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
@@ -683,10 +691,10 @@ class HFLiquidity(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'amihud': pd.DataFrame(),
-            'roll_spread': pd.DataFrame(),
-            'LOT': pd.DataFrame(),
-            'pastor_gamma': pd.DataFrame()
+            'amihud': {},
+            'roll_spread': {},
+            'LOT': {},
+            'pastor_gamma': {}
         }
 
         for comm in open_comm_list:
@@ -695,20 +703,25 @@ class HFLiquidity(HFFactor):
             )
             _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
             today_data = self.trunc_data(_data)
+
+            today_data['amt'] = today_data['close'] * today_data['volume']
+            today_data['rtn'] = today_data['close'] / today_data['open'] - 1
             if len(today_data):
 
-                today_data = self.add_label(data=today_data)
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
+
 
                 for factor in _factor_dict.keys():
                     if 'datetime' not in _factor_dict[factor].keys():
                         _factor_dict[factor]['datetime'] = res['datetime']
 
                     _factor_dict[factor][comm] = res[factor]
+        print(_factor_dict)
 
         for factor in _factor_dict.keys():
             _factor_dict[factor] = pd.DataFrame(_factor_dict[factor], index=[0])
+
         return _factor_dict
 
     def _cal(self, x):
@@ -771,9 +784,9 @@ class HFSingularFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'BV': pd.DataFrame(),
-            'BV_sigma': pd.DataFrame(),
-            'bollerslev_RSJ': pd.DataFrame()
+            'BV': {},
+            'BV_sigma': {},
+            'bollerslev_RSJ': {}
         }
 
         for comm in open_comm_list:
@@ -785,6 +798,8 @@ class HFSingularFactor(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -851,11 +866,11 @@ class HFSimplePriceVolumeFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'highest_rtn': pd.DataFrame(),
-            'lowest_rtn': pd.DataFrame(),
-            'range_pct': pd.DataFrame(),
-            'vol_oi': pd.DataFrame(),
-            'd_oi': pd.DataFrame(),
+            'highest_rtn': {},
+            'lowest_rtn': {},
+            'range_pct': {},
+            'vol_oi': {},
+            'd_oi': {},
         }
 
         for comm in open_comm_list:
@@ -867,6 +882,8 @@ class HFSimplePriceVolumeFactor(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -950,19 +967,19 @@ class HFPVCorrFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'P1V0': pd.DataFrame(),
-            'P2V0': pd.DataFrame(),
-            'P3V0': pd.DataFrame(),
-            'P0V1': pd.DataFrame(),
-            'P0V2': pd.DataFrame(),
-            'P0V3': pd.DataFrame(),
+            'P1V0': {},
+            'P2V0': {},
+            'P3V0': {},
+            'P0V1': {},
+            'P0V2': {},
+            'P0V3': {},
 
-            'R1DV0': pd.DataFrame(),
-            'R2DV0': pd.DataFrame(),
-            'R3DV0': pd.DataFrame(),
-            'R0DV1': pd.DataFrame(),
-            'R0DV2': pd.DataFrame(),
-            'R0DV3': pd.DataFrame(),
+            'R1DV0': {},
+            'R2DV0': {},
+            'R3DV0': {},
+            'R0DV1': {},
+            'R0DV2': {},
+            'R0DV3': {},
         }
 
         for comm in open_comm_list:
@@ -974,6 +991,9 @@ class HFPVCorrFactor(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+                today_data['dv'] = today_data['volume'] - today_data['volume'].shift(1)
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -1068,12 +1088,12 @@ class HFVolumeRatioFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'open_5t_pct': pd.DataFrame(),
-            'open_15t_pct': pd.DataFrame(),
-            'open_30t_pct': pd.DataFrame(),
-            'close_5t_pct': pd.DataFrame(),
-            'close_15t_pct': pd.DataFrame(),
-            'close_30t_pct': pd.DataFrame()
+            'open_5t_pct': {},
+            'open_15t_pct': {},
+            'open_30t_pct': {},
+            'close_5t_pct': {},
+            'close_15t_pct': {},
+            'close_30t_pct': {}
         }
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -1159,8 +1179,8 @@ class HFLeverageEffect(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'BV_rtn': pd.DataFrame(),
-            'std_rtn': pd.DataFrame(),
+            'BV_rtn': {},
+            'std_rtn': {},
         }
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
@@ -1171,6 +1191,8 @@ class HFLeverageEffect(HFFactor):
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
+                today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
                 res = self._cal(today_data)
                 res['datetime'] = today_data['datetime'].iloc[-1]
 
@@ -1241,18 +1263,33 @@ class HFBasisFactor(HFFactor):
     def t_daily_factor(self, open_comm_list) -> dict:
 
         _factor_dict = {
-            'main_sec_basis': pd.DataFrame(),
-            'd_main_sec_basis': pd.DataFrame(),
-            'dbdv': pd.DataFrame(),
-            'dbdoi': pd.DataFrame(),
+            'main_sec_basis': {},
+            'd_main_sec_basis': {},
+            'dbdv': {},
+            'dbdoi': {},
         }
 
         for comm in open_comm_list:
             now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
                 now_date=self.agent.earth_calender.now_date
             )
+            now_sec_main_contract = self.exchange.contract_dict[comm].now_sec_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            if now_sec_main_contract == '':
+                continue
+
             _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            _sec_data = self.exchange.contract_dict[comm].data_dict[now_sec_main_contract]
+
             today_data = self.trunc_data(_data)
+            today_sec_data = self.trunc_data(_sec_data).reset_index(drop=True)
+            today_data['rtn'] = today_data['close'] / today_data['open'] - 1
+
+            today_data['sec'] = today_sec_data['close']
+            today_data['sec_v'] = today_sec_data['volume']
+            today_data['sec_oi'] = today_sec_data['open_interest']
+
             if len(today_data):
 
                 today_data = self.add_label(data=today_data)
