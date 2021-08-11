@@ -39,6 +39,11 @@ class HFFactor(FactorTest):
         # )].copy()
         return today_data
 
+    def trunc_data_v2(self, _data, date):
+        today_data = _data.loc[_data['date'] == date].copy()
+        today_data = today_data.loc[today_data['datetime'].apply(lambda x: int(x.strftime('%H')) < 21)]
+        return today_data
+
     @staticmethod
     def add_label(data):
         data['label'] = data['datetime'].apply(
@@ -94,6 +99,105 @@ class HFRtn(HFFactor):
         _rtn_df = pd.DataFrame(_rtn_res, index=[0])
 
         return _rtn_df
+
+
+class HFContinuousContract(HFFactor):
+    def __init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path):
+        HFFactor.__init__(self, factor_name, begin_date, end_date, init_cash, contract_list, local_data_path)
+        self.close_open = []
+        self.close_high = []
+        self.close_low = []
+        self.close_close = []
+        self.oi_oi = []
+        self.vol_vol = []
+
+    def _daily_process(self):
+        print(self.agent.earth_calender.now_date)
+
+        open_comm_list = []
+
+        for comm in self.exchange.contract_dict.keys():
+            # 未上市的商品
+            if self.exchange.contract_dict[comm].first_listed_date > self.agent.earth_calender.now_date:
+                continue
+            # 已经退市的商品
+            if self.exchange.contract_dict[comm].last_de_listed_date < self.agent.earth_calender.now_date:
+                continue
+            print(comm)
+
+            self.exchange.contract_dict[comm].renew_main_sec_contract(now_date=self.agent.earth_calender.now_date)
+            self.exchange.contract_dict[comm].renew_operate_contract(now_date=self.agent.earth_calender.now_date)
+            open_comm_list.append(comm)
+
+        t_factor_dict = self.t_daily_factor(open_comm_list)
+
+        self.close_open.append(t_factor_dict['close_open'])
+        self.close_high.append(t_factor_dict['close_high'])
+        self.close_low.append(t_factor_dict['close_low'])
+        self.close_close.append(t_factor_dict['close_close'])
+        self.oi_oi.append(t_factor_dict['oi_oi'])
+        self.vol_vol.append(t_factor_dict['vol_vol'])
+
+    def t_daily_factor(self, open_comm_list):
+        _factor_dict = {
+            'close_open': {},
+            'close_high': {},
+            'close_low': {},
+            'close_close': {},
+            'oi_oi': {},
+            'vol_vol': {},
+        }
+
+        for comm in open_comm_list:
+            now_main_contract = self.exchange.contract_dict[comm].now_main_contract(
+                now_date=self.agent.earth_calender.now_date
+            )
+            _data = self.exchange.contract_dict[comm].data_dict[now_main_contract]
+            today_data = self.trunc_data(_data)
+            yesterday_data = self.trunc_data_v2(
+                _data=_data,
+                date=self.exchange.trade_calender.get_last_trading_date(
+                    date=self.agent.earth_calender.now_date
+                ).strftime('%Y-%m-%d')
+            )
+            if len(today_data) & len(yesterday_data):
+
+                today_data = self.add_label(data=today_data)
+
+                res = self._cal(today_data=today_data, yesterday_data=yesterday_data)
+                res['datetime'] = today_data['datetime'].iloc[-1]
+
+                for factor in _factor_dict.keys():
+                    if 'datetime' not in _factor_dict[factor].keys():
+                        _factor_dict[factor]['datetime'] = res['datetime']
+
+                    _factor_dict[factor][comm] = res[factor]
+
+        for factor in _factor_dict.keys():
+            _factor_dict[factor] = pd.DataFrame(_factor_dict[factor], index=[0])
+        return _factor_dict
+
+    def _cal(self, today_data, yesterday_data):
+
+        yesterday_close = yesterday_data['close'].iloc[-1]
+        yesterday_oi = yesterday_data['open_interest'].iloc[-1]
+        yesterday_volume = yesterday_data['volume'].sum()
+
+        today_open = today_data['open'].max()
+        today_high = today_data['high'].max()
+        today_low = today_data['low'].max()
+        today_close = today_data['close'].max()
+        today_oi = today_data['open_interest'].iloc[-1]
+        today_volume = today_data['volume'].sum()
+
+        return {
+            'close_open': today_open / yesterday_close - 1,
+            'close_high': today_high / yesterday_close - 1,
+            'close_low': today_low / yesterday_close - 1,
+            'close_close': today_close / yesterday_close - 1,
+            'oi_oi': today_oi / yesterday_oi - 1 if yesterday_oi != 0 else 0,
+            'vol_vol': today_volume / yesterday_volume - 1 if yesterday_volume != 0 else 0,
+        }
 
 
 class HFMaxMinRtn(HFFactor):

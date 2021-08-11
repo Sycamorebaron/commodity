@@ -2,6 +2,7 @@ import sys
 import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
+import gplearn
 
 from factor.cal_daily_factor_1T.cal_factor_realize.hfd1t_rtn import hf_rtn_factor
 from factor.cal_daily_factor_1T.cal_factor_realize.hfd1t_rtn_moment import hf_rtn_moment_factor
