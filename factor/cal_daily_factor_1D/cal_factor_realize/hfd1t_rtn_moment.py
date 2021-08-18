@@ -4,7 +4,7 @@ import pandas as pd
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.append(BASE_DIR)
 
-from factor.cal_daily_factor_1T.factor_test_daily1T import HFRtnMoment
+from factor.cal_daily_factor_1D.factor_test_daily1T import HFRtnMoment
 from utils.base_para import NORMAL_CONTRACT_INFO, local_data_path, OUTPUT_DATA_PATH
 
 pd.set_option('expand_frame_repr', False)

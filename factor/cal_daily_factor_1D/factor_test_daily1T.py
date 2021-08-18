@@ -183,10 +183,10 @@ class HFContinuousContract(HFFactor):
         yesterday_oi = yesterday_data['open_interest'].iloc[-1]
         yesterday_volume = yesterday_data['volume'].sum()
 
-        today_open = today_data['open'].max()
+        today_open = today_data['open'].iloc[0]
         today_high = today_data['high'].max()
-        today_low = today_data['low'].max()
-        today_close = today_data['close'].max()
+        today_low = today_data['low'].min()
+        today_close = today_data['close'].iloc[-1]
         today_oi = today_data['open_interest'].iloc[-1]
         today_volume = today_data['volume'].sum()
 
