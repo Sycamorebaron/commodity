@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import time
 import warnings
+import re
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.append(BASE_DIR)
 
@@ -10,6 +11,7 @@ from genetic_algo.program.data_former import DataFormer
 from genetic_algo.program.pre_procsess import PreProcess
 from genetic_algo.gplearn.genetic import SymbolicRegressor
 from gplearn.genetic import SymbolicRegressor as SR
+from utils.base_para import NORMAL_CONTRACT_INFO
 
 warnings.filterwarnings('ignore')
 
@@ -33,11 +35,19 @@ class CommGenetic:
         self.res = {}
 
     @timer
-    def train(self, train_len):
-        data = self.data_former.dropna_data
+    def train(self, min_train_len):
+        data = self.data_former.drop_nainf_data
         data = data[[i for i in data.columns if i not in ['datetime']]]
+        if len(data) < min_train_len:
+            print('DATA TOO SHORT')
+            return '', 0
+
         data = self.pre_process.stationalize(data, targets=[i for i in data.columns if i not in ['f_rtn']])
 
+        if len(data) > 2 * min_train_len:
+            train_len = int(len(data) / 2)
+        else:
+            train_len = min_train_len
         train_data = data[:train_len].reset_index(drop=True)
         test_data = data[train_len:].reset_index(drop=True)
 
@@ -47,7 +57,7 @@ class CommGenetic:
         target = 'f_rtn'
 
         model_gp = SymbolicRegressor(
-            generations=3,  # 公式进化的世代数量。世代数量越多，消耗算力越多，公式的进化次数越多。
+            generations=20,  # 公式进化的世代数量。世代数量越多，消耗算力越多，公式的进化次数越多。
             population_size=1000,  # 每一代公式群体中的公式数量。公式数量越大，消耗算力越多，公式之间组合的空间越大。
             function_set=(
                 'add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg', 'inv', 'max', 'min', 'sin', 'cos', 'tan',
@@ -62,17 +72,19 @@ class CommGenetic:
                 'ts_prod_20', 'ts_stddev_5', 'ts_stddev_10', 'ts_stddev_15', 'ts_stddev_20', 'ts_zscore_5',
                 'ts_zscore_10', 'ts_zscore_15', 'ts_zscore_20', 'rank_sub', 'rank_div', 'sigmoid'
             ),  # 用于构建和进化公式时使用的函数集，可自定义更多函数。
-            init_depth=(1, 4),  # 公式树的初始化深度，init_depth是一个二元组(min_depth,max_depth)，树的初始深度将处在
+            init_depth=(2, 6),  # 公式树的初始化深度，init_depth是一个二元组(min_depth,max_depth)，树的初始深度将处在
                                 # [min_depth, max_depth]区间内。设置树深度最小1层，最大4层。最大深度越深，可能得出越复杂的因子，
                                 # 但是因子的意义更难解释。
-            tournament_size=20,  # 每一代的所有公式中，tournament_size个公式会被随机选中，其中适应度最高的公式能进行变异或繁殖生
+            tournament_size=40,  # 每一代的所有公式中，tournament_size个公式会被随机选中，其中适应度最高的公式能进行变异或繁殖生
                                  # 成下一代公式。tournament_size越小，随机选择范围越小，选择的结果越不确定.
             metric='pearson',  # 适应度指标，可自定义更多指标。
             p_crossover=0.5,  # 父代进行交叉变异进化的概率。交叉变异是最有效的进化方式，可以设置为较大概率。
-            p_subtree_mutation=0.01,  # 父代进行子树变异进化的概率。子树变异的结果不稳定，概率不宜过大。
+            p_subtree_mutation=0.05,  # 父代进行子树变异进化的概率。子树变异的结果不稳定，概率不宜过大。
             p_hoist_mutation=0,  # 父代进行Hoist变异进化的概率。本文的测试中公式树层次都较低，所以没有使用Hoist变异。
             p_point_mutation=0.01,  # 父代进行点变异进化的概率。点变异的结果不稳定，概率不宜过大。
             p_point_replace=0.4,  # 即点变异中父代每个节点进行变异进化的概率。点变异的概率已经很小，可设置为较大概率保证点变异的执行
+            verbose=1,
+            stopping_criteria=0.2  # 终止条件，即fitness的值大于此值就停止进化
         )
 
         X_train = train_data[base_f]
@@ -85,16 +97,36 @@ class CommGenetic:
         y_test_pred = model_gp.predict(X=X_test)
         y_test['pred'] = pd.Series(y_test_pred)
 
-        print(model_gp._program, y_test['f_rtn'].corr(y_test['pred']))
 
-        self.res[str(model_gp._program)] = y_test['f_rtn'].corr(y_test['pred'])
+        formula = str(model_gp._program)
+
+        params = re.findall('X[0-9]{1,2}', formula)
+        for param in params:
+            formula = formula.replace(param, base_f[int(param[1:])])
+
+        self.res[formula] = y_test['f_rtn'].corr(y_test['pred'], method='spearman')
+        return formula, y_test['f_rtn'].corr(y_test['pred'], method='spearman')
 
 
 if __name__ == '__main__':
-    comm = 'FG'
-    comm_genetic = CommGenetic(comm=comm)
-    for i in range(50):
-        print(i, '-' * 50)
-        comm_genetic.train(train_len=1000)
-    res_df = pd.DataFrame(comm_genetic.res, index=['corr']).T
-    res_df.to_csv(r'D:\commodity\genetic_algo\data\%sres_df.csv' % comm)
+
+    skip_list = ['PK']
+    res = []
+    for comm_info in NORMAL_CONTRACT_INFO:
+        comm = comm_info['id']
+        if comm in skip_list:
+            continue
+        comm_genetic = CommGenetic(comm=comm)
+
+        print(comm, '-' * 50)
+        formula, s_corr = comm_genetic.train(min_train_len=500)
+        print(formula, s_corr)
+        res.append(
+            {
+                'comm': comm,
+                'formula': formula,
+                'spearman': s_corr
+            }
+        )
+    res_df = pd.DataFrame(res)
+    res_df.to_csv(r'D:\commodity\genetic_algo\data\formula_res_df.csv')

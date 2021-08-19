@@ -1,6 +1,5 @@
 import pandas as pd
 from statsmodels.tsa.stattools import adfuller
-
 pd.set_option('expand_frame_repr', False)
 
 

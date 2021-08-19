@@ -365,11 +365,13 @@ class _Program(object):
         #     except Exception as e:
         #         print(i)
         #
-        # if isinstance(node, float):
-        #     return np.repeat(node, X.shape[0])
-        # if isinstance(node, int):
-        #     return X[:, node]
         # print('《《《《《《《《《 TREE CONTENT')
+
+        if isinstance(node, float):
+            return np.repeat(node, X.shape[0])
+
+        if isinstance(node, int):
+            return X[:, node]
 
         apply_stack = []
 

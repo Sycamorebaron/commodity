@@ -339,7 +339,7 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
             self._metric = self.metric
         elif isinstance(self, RegressorMixin):
             if self.metric not in ('mean absolute error', 'mse', 'rmse',
-                                   'pearson', 'spearman'):
+                                   'pearson', 'spearman', 'top bottom'):
                 raise ValueError('Unsupported metric: %s' % self.metric)
             self._metric = _fitness_map[self.metric]
         elif isinstance(self, ClassifierMixin):
@@ -524,9 +524,11 @@ class BaseSymbolic(BaseEstimator, metaclass=ABCMeta):
                 self._verbose_reporter(self.run_details_)
 
             # Check for early stopping
+
             if self._metric.greater_is_better:
                 best_fitness = fitness[np.argmax(fitness)]
                 if best_fitness >= self.stopping_criteria:
+
                     break
             else:
                 best_fitness = fitness[np.argmin(fitness)]

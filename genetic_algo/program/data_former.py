@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import numpy as np
 from genetic_algo.genetic_utils import continuous_contract_path, factor_path
 pd.set_option('expand_frame_repr', False)
 
@@ -13,13 +14,15 @@ class DataFormer:
         return self.form_data()
 
     @property
-    def dropna_data(self):
-        return self.form_drop_na_data()
+    def drop_nainf_data(self):
+        return self.form_drop_nainf_data()
 
-    def form_drop_na_data(self):
+    def form_drop_nainf_data(self):
         data = self.form_data()
         chosen = ['datetime']
         for col in data.columns[1:]:
+            data.loc[np.isfinite(data[col]).apply(lambda x: not x), col] = np.nan
+
             if data[col].isna().sum() == 0:
                 chosen.append(col)
 
@@ -29,7 +32,6 @@ class DataFormer:
         contract_data = pd.read_csv(os.path.join(continuous_contract_path, '%s.csv' % self.comm))[[
             'datetime', 'open', 'high', 'low', 'close', 'vol', 'oi'
         ]]
-
         factor_data = self._factor_data()
         m_data = contract_data.merge(factor_data, on='datetime', how='left')
         m_data['f_rtn'] = m_data['1dhf_rtn'].shift(-1)
@@ -42,6 +44,7 @@ class DataFormer:
             if files:
                 break
         merged_data = pd.DataFrame()
+
         for f in files:
             f_d = pd.read_csv(os.path.join(factor_path, f))[['datetime', self.comm]]
             f_d.columns = ['datetime', f.split('.')[0]]

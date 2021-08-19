@@ -107,6 +107,7 @@ def _weighted_pearson(y, y_pred, w):
     # 【修改】存在无预测结果的变异，所以ypred可能是None
     if y_pred is None:
         return 0.
+
     # 【/修改】
     with np.errstate(divide='ignore', invalid='ignore'):
 
@@ -165,9 +166,29 @@ root_mean_square_error = _Fitness(function=_root_mean_square_error,
 log_loss = _Fitness(function=_log_loss,
                     greater_is_better=False)
 
+# ------------------- 自定义损失函数 -----------------------
+
+def __top_bottom(y, y_pred, w):
+    if y_pred is None:
+        return 0.
+
+    y_pred = pd.DataFrame(y_pred)
+    y_pred['y'] = pd.Series(y)
+
+    pred_bottom = y_pred.loc[y_pred['y'] <= y_pred['y'].quantile(0.1), 0].mean()
+    pred_top = y_pred.loc[y_pred['y'] >= y_pred['y'].quantile(0.9), 0].mean()
+
+    return pred_top - pred_bottom
+
+top_bottom = _Fitness(function=__top_bottom,
+                      greater_is_better=True)
+
+# ---------------------------------------------------------
+
 _fitness_map = {'pearson': weighted_pearson,
                 'spearman': weighted_spearman,
                 'mean absolute error': mean_absolute_error,
                 'mse': mean_square_error,
                 'rmse': root_mean_square_error,
-                'log loss': log_loss}
+                'log loss': log_loss,
+                'top bottom': top_bottom}

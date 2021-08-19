@@ -160,8 +160,8 @@ class HFContinuousContract(HFFactor):
                     date=self.agent.earth_calender.now_date
                 ).strftime('%Y-%m-%d')
             )
-            if len(today_data) & len(yesterday_data):
 
+            if (len(today_data) > 0) & (len(yesterday_data) > 0):
                 today_data = self.add_label(data=today_data)
 
                 res = self._cal(today_data=today_data, yesterday_data=yesterday_data)
