@@ -167,34 +167,41 @@ cos1 = _Function(function=np.cos, name='cos', arity=1)
 tan1 = _Function(function=np.tan, name='tan', arity=1)
 sig1 = _Function(function=_sigmoid, name='sig', arity=1)
 
+
 # ----------------------------- 自定义函数 ------------------------------------
 def __sign(x):
     return x / x.abs()
+
 
 def __rank(x):
     """第i个元素在X中的分位数"""
     x = pd.Series(x)
     return pd.Series([len(x.loc[x < i]) / len(x) for i in x])
 
+
 def __delay_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.shift(d))
+
 
 def __delay_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.shift(d))
 
+
 def __delay_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.shift(d))
 
+
 def __delay_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.shift(d))
+
 
 def __ts_corr_5(x, y):
     x = pd.Series(x)
@@ -202,11 +209,13 @@ def __ts_corr_5(x, y):
     d = 5
     return pd.Series(x.rolling(d).corr(y))
 
+
 def __ts_corr_10(x, y):
     x = pd.Series(x)
     y = pd.Series(y)
     d = 10
     return pd.Series(x.rolling(d).corr(y))
+
 
 def __ts_corr_15(x, y):
     x = pd.Series(x)
@@ -214,11 +223,13 @@ def __ts_corr_15(x, y):
     d = 15
     return pd.Series(x.rolling(d).corr(y))
 
+
 def __ts_corr_20(x, y):
     x = pd.Series(x)
     y = pd.Series(y)
     d = 20
     return pd.Series(x.rolling(d).corr(y))
+
 
 def __ts_cov_5(x, y):
     x = pd.Series(x)
@@ -226,11 +237,13 @@ def __ts_cov_5(x, y):
     d = 5
     return pd.Series(x.rolling(d).cov(y))
 
+
 def __ts_cov_10(x, y):
     x = pd.Series(x)
     y = pd.Series(y)
     d = 10
     return pd.Series(x.rolling(d).cov(y))
+
 
 def __ts_cov_15(x, y):
     x = pd.Series(x)
@@ -238,67 +251,81 @@ def __ts_cov_15(x, y):
     d = 15
     return pd.Series(x.rolling(d).cov(y))
 
+
 def __ts_cov_20(x, y):
     x = pd.Series(x)
     y = pd.Series(y)
     d = 20
     return pd.Series(x.rolling(d).cov(y))
 
+
 def __scale_1(x):
     x = pd.Series(x)
     a = 1
     return pd.Series(x.apply(lambda i: i * a / sum(abs(x))))
+
 
 def __scale_2(x):
     x = pd.Series(x)
     a = 2
     return pd.Series(x.apply(lambda i: i * a / sum(abs(x))))
 
+
 def __scale_3(x):
     x = pd.Series(x)
     a = 3
     return pd.Series(x.apply(lambda i: i * a / sum(abs(x))))
+
 
 def __scale_4(x):
     x = pd.Series(x)
     a = 1
     return pd.Series(x.apply(lambda i: i * a / sum(abs(x))))
 
+
 def __delta_1(x):
     x = pd.Series(x)
     return pd.Series(x - x.shift(1))
+
 
 def __delta_2(x):
     x = pd.Series(x)
     return pd.Series(x - x.shift(2))
 
+
 def __delta_3(x):
     x = pd.Series(x)
     return pd.Series(x - x.shift(3))
 
+
 def __delta_4(x):
     x = pd.Series(x)
     return pd.Series(x - x.shift(4))
+
 
 def __signedpower_2(x):
     x = pd.Series(x)
     a = 2
     return pd.Series(pd.Series(__sign(x)) * x.apply(lambda i: i**a))
 
+
 def __signedpower_3(x):
     x = pd.Series(x)
     a = 3
     return pd.Series(pd.Series(__sign(x)) * x.apply(lambda i: i**a))
+
 
 def __signedpower_4(x):
     x = pd.Series(x)
     a = 4
     return pd.Series(pd.Series(__sign(x)) * x.apply(lambda i: i**a))
 
+
 def __signedpower_5(x):
     x = pd.Series(x)
     a = 5
     return pd.Series(pd.Series(__sign(x)) * x.apply(lambda i: i**a))
+
 
 def __decay_linear_5(x):
     x = pd.Series(x)
@@ -306,17 +333,20 @@ def __decay_linear_5(x):
     vector_d = [(i + 1) / ((1 + d) * d) * 2 for i in range(d)]
     return pd.Series(x.rolling(d).apply(lambda j: np.dot(j, vector_d)))
 
+
 def __decay_linear_10(x):
     x = pd.Series(x)
     d = 10
     vector_d = [(i + 1) / ((1 + d) * d) * 2 for i in range(d)]
     return pd.Series(x.rolling(d).apply(lambda j: np.dot(j, vector_d)))
 
+
 def __decay_linear_15(x):
     x = pd.Series(x)
     d = 15
     vector_d = [(i + 1) / ((1 + d) * d) * 2 for i in range(d)]
     return pd.Series(x.rolling(d).apply(lambda j: np.dot(j, vector_d)))
+
 
 def __decay_linear_20(x):
     x = pd.Series(x)
@@ -330,194 +360,233 @@ def __ts_min_5(x):
     d = 5
     return pd.Series(x.rolling(d).min())
 
+
 def __ts_min_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).min())
+
 
 def __ts_min_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).min())
 
+
 def __ts_min_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).min())
+
 
 def __ts_max_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).max())
 
+
 def __ts_max_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).max())
+
 
 def __ts_max_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).max())
 
+
 def __ts_max_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).max())
+
 
 def __ts_argmin_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).apply(lambda i: i.argmin()))
 
+
 def __ts_argmin_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).apply(lambda i: i.argmin()))
+
 
 def __ts_argmin_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).apply(lambda i: i.argmin()))
 
+
 def __ts_argmin_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).apply(lambda i: i.argmin()))
+
 
 def __ts_argmax_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).apply(lambda i: i.argmax()))
 
+
 def __ts_argmax_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).apply(lambda i: i.argmax()))
+
 
 def __ts_argmax_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).apply(lambda i: i.argmax()))
 
+
 def __ts_argmax_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).apply(lambda i: i.argmax()))
 
+
 def __ts_rank_5(x):
     x = pd.Series(x)
     d = 5
-    return pd.Series(x.rolling(d).apply(lambda x: len(x.loc[x < x.iloc[-1]]) / len(x)))
+    return pd.Series(x.rolling(d).apply(lambda i: len(i.loc[i < i.iloc[-1]]) / len(i)))
+
 
 def __ts_rank_10(x):
     x = pd.Series(x)
     d = 10
-    return pd.Series(x.rolling(d).apply(lambda x: len(x.loc[x < x.iloc[-1]]) / len(x)))
+    return pd.Series(x.rolling(d).apply(lambda i: len(i.loc[i < i.iloc[-1]]) / len(i)))
+
 
 def __ts_rank_15(x):
     x = pd.Series(x)
     d = 15
-    return pd.Series(x.rolling(d).apply(lambda x: len(x.loc[x < x.iloc[-1]]) / len(x)))
+    return pd.Series(x.rolling(d).apply(lambda i: len(i.loc[i < i.iloc[-1]]) / len(i)))
+
 
 def __ts_rank_20(x):
     x = pd.Series(x)
     d = 20
-    return pd.Series(x.rolling(d).apply(lambda x: len(x.loc[x < x.iloc[-1]]) / len(x)))
+    return pd.Series(x.rolling(d).apply(lambda i: len(i.loc[i < i.iloc[-1]]) / len(i)))
+
 
 def __ts_sum_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).sum())
 
+
 def __ts_sum_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).sum())
+
 
 def __ts_sum_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).sum())
 
+
 def __ts_sum_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).sum())
+
 
 def __ts_prod_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).apply(lambda i: np.prod(i)))
 
+
 def __ts_prod_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).apply(lambda i: np.prod(i)))
+
 
 def __ts_prod_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).apply(lambda i: np.prod(i)))
 
+
 def __ts_prod_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).apply(lambda i: np.prod(i)))
+
 
 def __ts_stddev_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).std(ddof=1))
 
+
 def __ts_stddev_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).std(ddof=1))
+
 
 def __ts_stddev_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).std(ddof=1))
 
+
 def __ts_stddev_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).std(ddof=1))
+
 
 def __ts_zscore_5(x):
     x = pd.Series(x)
     d = 5
     return pd.Series(x.rolling(d).mean() / x.rolling(d).std(ddof=1))
 
+
 def __ts_zscore_10(x):
     x = pd.Series(x)
     d = 10
     return pd.Series(x.rolling(d).mean() / x.rolling(d).std(ddof=1))
+
 
 def __ts_zscore_15(x):
     x = pd.Series(x)
     d = 15
     return pd.Series(x.rolling(d).mean() / x.rolling(d).std(ddof=1))
 
+
 def __ts_zscore_20(x):
     x = pd.Series(x)
     d = 20
     return pd.Series(x.rolling(d).mean() / x.rolling(d).std(ddof=1))
+
 
 def __rank_sub(x, y):
     x = pd.Series(x)
     y = pd.Series(y)
     return pd.Series(pd.Series(__rank(x)) - pd.Series(__rank(y)))
 
+
 def __rank_div(x, y):
     x = pd.Series(x)
     y = pd.Series(y)
     return pd.Series(pd.Series(__rank(x)) / pd.Series(__rank(y)))
 
+
 def __sigmoid(x):
     x = pd.Series(x)
     return pd.Series(x.apply(lambda i: 1 / (1 + np.exp(-i))))
+
 
 rank = _Function(function=__rank, name='rank', arity=1)
 delay_5 = _Function(function=__delay_5, name='delay_5', arity=1)
@@ -677,19 +746,19 @@ _function_map = {
 }
 
 
-if __name__ == '__main__':
-    print(_function_map.keys())
-    exit()
-    test_data = pd.read_csv(r'D:\commodity\data\1d_exp_ic.csv')
-    x = test_data['1dvol_oi']
-    y = test_data['1dstd'].abs()
-
-    # print(y)
-    x = np.array(x)
-    print(type(x))
-    print(x)
-
-    res = scale_2(x, y)
-
-    print(type(res))
-    print(res)
+# if __name__ == '__main__':
+#     print(_function_map.keys())
+#     exit()
+#     test_data = pd.read_csv(r'D:\commodity\data\1d_exp_ic.csv')
+#     x = test_data['1dvol_oi']
+#     y = test_data['1dstd'].abs()
+#
+#     # print(y)
+#     x = np.array(x)
+#     print(type(x))
+#     print(x)
+#
+#     res = scale_2(x, y)
+#
+#     print(type(res))
+#     print(res)

@@ -14,22 +14,25 @@ class SimpleTest:
 
     def add_factor(self):
 
-        self.data['scale'] = abs(self.data['1dvbig_rtn_vol']).rolling(self.hist_len, min_periods=self.hist_len).sum()
-        # self.data['factor'] = (self.data['1dvbig_rtn_vol'] / self.data['scale']).apply(lambda x: np.cos(x))
+        self.data['rank_1dkurt'] = self.data['1dkurt'].rolling(self.hist_len).apply(lambda x: len(x.loc[x < x.iloc[-1]]) / len(x))
+        self.data['sub_1'] = self.data['1droll_spread'] - self.data['rank_1dkurt']
+        self.data['factor'] = self.data['sub_1'] - self.data['rank_1dkurt']
 
-        self.data['factor'] = - self.data['1dd_first_com'] / self.data['1dstd']
+        # self.data['factor'] = self.data['1ddown_rtn_mean']
+        #
+        # self.data['factor'] = self.data['1dopen_5t_pct'].apply(lambda x: np.sign(x) * x**4)
 
     def backtest(self):
         self.add_factor()
         data = self.data[['datetime', 'factor', '1dhf_rtn']]
 
         data['long_thresh'] = data['factor'].rolling(
-            self.hist_len, min_periods=self.hist_len
-        ).apply(lambda x: x.quantile(0.9))
+            self.hist_len*100, min_periods=self.hist_len
+        ).apply(lambda x: x.quantile(0.95))
 
         data['short_thresh'] = data['factor'].rolling(
-            self.hist_len, min_periods=self.hist_len
-        ).apply(lambda x: x.quantile(0.1))
+            self.hist_len*100, min_periods=self.hist_len
+        ).apply(lambda x: x.quantile(0.05))
 
         long_cond = data['factor'] > data['long_thresh']
         short_cond = data['factor'] < data['short_thresh']
@@ -49,9 +52,9 @@ class SimpleTest:
 
 
 if __name__ == '__main__':
-    comm = 'PB'
+    comm = 'RB'
     simple_test = SimpleTest(
         comm=comm,
-        hist_len=300
+        hist_len=100
     )
     simple_test.backtest()
