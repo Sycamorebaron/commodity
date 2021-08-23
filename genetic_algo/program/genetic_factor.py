@@ -60,7 +60,17 @@ class CommGenetic:
             generations=20,  # 公式进化的世代数量。世代数量越多，消耗算力越多，公式的进化次数越多。
             population_size=1000,  # 每一代公式群体中的公式数量。公式数量越大，消耗算力越多，公式之间组合的空间越大。
             function_set=(
-
+                'add', 'sub', 'mul', 'div', 'sqrt', 'log', 'abs', 'neg', 'inv', 'max', 'min', 'sin', 'cos', 'tan',
+                'delay_5', 'delay_10', 'delay_15', 'delay_20', 'ts_corr_5', 'ts_corr_10', 'ts_corr_15',
+                'ts_corr_20', 'ts_cov_5', 'ts_cov_10', 'ts_cov_15', 'ts_cov_20', 'scale_1', 'scale_2', 'scale_3',
+                'scale_4', 'delta_1', 'delta_2', 'delta_3', 'delta_4', 'signedpower_2', 'signedpower_3',
+                'signedpower_4', 'signedpower_5', 'decay_linear_5', 'decay_linear_10', 'decay_linear_15',
+                'decay_linear_20', 'ts_min_5', 'ts_min_10', 'ts_min_15', 'ts_min_20', 'ts_max_5', 'ts_max_10',
+                'ts_max_15', 'ts_max_20', 'ts_argmin_5', 'ts_argmin_10', 'ts_argmin_15', 'ts_argmin_20', 'ts_argmax_5',
+                'ts_argmax_10', 'ts_argmax_15', 'ts_argmax_20', 'ts_rank_5', 'ts_rank_10', 'ts_rank_15', 'ts_rank_20',
+                'ts_sum_5', 'ts_sum_10', 'ts_sum_15', 'ts_sum_20', 'ts_prod_5', 'ts_prod_10', 'ts_prod_15',
+                'ts_prod_20', 'ts_stddev_5', 'ts_stddev_10', 'ts_stddev_15', 'ts_stddev_20', 'ts_zscore_5',
+                'ts_zscore_10', 'ts_zscore_15', 'ts_zscore_20', 'rank_sub', 'rank_div', 'sigmoid'
             ),  # 用于构建和进化公式时使用的函数集，可自定义更多函数。
             init_depth=(2, 6),  # 公式树的初始化深度，init_depth是一个二元组(min_depth,max_depth)，树的初始深度将处在
                                 # [min_depth, max_depth]区间内。设置树深度最小1层，最大4层。最大深度越深，可能得出越复杂的因子，
