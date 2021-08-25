@@ -59,4 +59,4 @@ class DataFormer:
 if __name__ == '__main__':
 
     data_former = DataFormer(comm='L')
-    print(data_former.dropna_data)
+    print(data_former.drop_nainf_data)

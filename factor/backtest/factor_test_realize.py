@@ -12,8 +12,8 @@ from utils.base_para import *
 
 
 class BackTest(MainTest):
-    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night):
-        MainTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage)
+    def __init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, term, leverage, night, comm):
+        MainTest.__init__(self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage, comm)
         self.term = term
         self.term_list = self._gen_term_list(term=term, night=night)
 

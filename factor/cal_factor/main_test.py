@@ -7,7 +7,7 @@ import os
 
 class MainTest:
     def __init__(
-        self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage=True
+        self, test_name, begin_date, end_date, init_cash, contract_list, local_data_path, leverage, comm
     ):
         self.test_name = test_name
         self._begin_date = begin_date
@@ -16,7 +16,8 @@ class MainTest:
         self.exchange = Exchange(
             contract_list=contract_list,
             init_cash=init_cash,
-            local_data_path=local_data_path
+            local_data_path=local_data_path,
+            comm=comm
         )
         self.agent = self._gen_agent(begin_date=begin_date, end_date=end_date, leverage=leverage)
 

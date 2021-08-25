@@ -74,7 +74,7 @@ class _ContractSeries:
 class Contract:
     def __init__(
         self, commodity, first_listed_date, last_de_listed_date, month_list, init_margin_rate, contract_unit,
-        open_comm, close_comm, local_data_path
+        open_comm, close_comm, local_data_path, comm
     ):
         self.operate_contract = ''
         self.first_listed_date = pd.to_datetime(first_listed_date)
@@ -91,8 +91,8 @@ class Contract:
         self.contract_volume = self._fetch_volume()
         self.init_margin_rate = init_margin_rate
         self.contract_unit = contract_unit
-        self.open_comm = 0.000
-        self.close_comm = 0.000
+        self.open_comm = comm
+        self.close_comm = comm
 
     def _init_contract_volume(self):
         print('INIT CONTRACT VOLUME...')
